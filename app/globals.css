@@ -1,0 +1,184 @@
+@import "tailwindcss";
+@import "./settings.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Existing purple utilities are the app's accent tokens, including opacity variants. */
+@theme inline {
+  /* Prefer installed brand fonts without requiring network downloads. */
+  --font-sans: "Inter", "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: "JetBrains Mono", Consolas, "Liberation Mono", monospace;
+  --color-purple-50: color-mix(in srgb, var(--agency-accent, #7C3AED) 5%, white);
+  --color-purple-100: color-mix(in srgb, var(--agency-accent, #7C3AED) 12%, white);
+  --color-purple-200: color-mix(in srgb, var(--agency-accent, #7C3AED) 25%, white);
+  --color-purple-300: color-mix(in srgb, var(--agency-accent, #7C3AED) 40%, white);
+  --color-purple-400: color-mix(in srgb, var(--agency-accent, #7C3AED) 60%, white);
+  --color-purple-500: var(--agency-accent, #7C3AED);
+  --color-purple-600: var(--agency-accent, #7C3AED);
+  --color-purple-700: color-mix(in srgb, var(--agency-accent, #7C3AED) 85%, black);
+  --color-purple-50: color-mix(in srgb, var(--agency-accent, #7C3AED) 5%, white);
+  --color-purple-100: color-mix(in srgb, var(--agency-accent, #7C3AED) 12%, white);
+  --color-purple-200: color-mix(in srgb, var(--agency-accent, #7C3AED) 25%, white);
+  --color-purple-300: color-mix(in srgb, var(--agency-accent, #7C3AED) 40%, white);
+  --color-purple-400: color-mix(in srgb, var(--agency-accent, #7C3AED) 60%, white);
+  --color-purple-500: var(--agency-accent, #7C3AED);
+  --color-purple-600: var(--agency-accent, #7C3AED);
+  --color-purple-700: color-mix(in srgb, var(--agency-accent, #7C3AED) 85%, black);
+  --color-purple-800: color-mix(in srgb, var(--agency-accent, #7C3AED) 70%, black);
+  --color-purple-900: color-mix(in srgb, var(--agency-accent, #7C3AED) 50%, black);
+  --color-purple-950: color-mix(in srgb, var(--agency-accent, #7C3AED) 30%, black);
+}
+
+
+:root {
+  --agency-accent: #1B7167;
+  --agency-action: #0E5C53;
+  --agency-on-accent: #FFFFFF;
+  --agency-ink-light: #0E5C53;
+  --agency-ink-dark: #6EE7B7;
+  --background: #EFF1EB;
+  --foreground: #161A17;
+  --card-bg: #FFFFFF;
+  --card-border: #E4E5DD;
+}
+
+.dark {
+  --background: #09110F;
+  --foreground: #F1F5F2;
+  --card-bg: #121C18;
+  --card-border: #283730;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  min-height: 100vh;
+}
+
+.input-control,
+.input {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  background: #f9fafb;
+  padding: 0.625rem 0.75rem;
+  color: #111827;
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.input-control:focus,
+.input:focus {
+  border-color: var(--agency-accent, #7c3aed);
+}
+
+.dark .input-control,
+.dark .input {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: #030712;
+  color: #f9fafb;
+}
+
+@media print {
+  body.payroll-print-mode * {
+    visibility: hidden !important;
+  }
+
+  body.payroll-print-mode .payroll-payslip,
+  body.payroll-print-mode .payroll-payslip * {
+    visibility: visible !important;
+  }
+
+  body.payroll-print-mode .payroll-payslip {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    color: #111827;
+    background: #ffffff;
+  }
+}
+
+/* Solid success actions must retain accessible contrast in both themes. */
+button:is([class~="bg-emerald-500"], [class~="bg-emerald-600"], [class~="bg-green-500"], [class~="bg-green-600"], [class~="bg-teal-500"], [class~="bg-teal-600"], [class~="bg-[#1B7167]"], [class~="bg-brand"]) {
+  color: #fff !important;
+}
+
+button:is([class~="bg-emerald-500"], [class~="bg-emerald-600"], [class~="bg-green-500"], [class~="bg-green-600"], [class~="bg-teal-500"], [class~="bg-teal-600"], [class~="bg-[#1B7167]"], [class~="bg-brand"]) > :is(span, svg) {
+  color: #fff !important;
+}
+
+/* Custom modern thin scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 9999px;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  50% { transform: translateX(8px); }
+  75% { transform: translateX(-4px); }
+}
+
+/* Legacy TourFlow teal utilities are brand accents, not semantic states. Map
+   them to each agency's configured theme so existing screens stay white-label. */
+[class~="bg-[#1B7167]"] { background-color: var(--agency-action) !important; }
+[class~="text-[#1B7167]"] { color: var(--agency-ink-light) !important; }
+[class~="border-[#1B7167]"] { border-color: var(--agency-accent) !important; }
+[class~="ring-[#1B7167]"] { --tw-ring-color: var(--agency-accent) !important; }
+[class~="shadow-[#1B7167]"] { --tw-shadow-color: var(--agency-accent) !important; }
+[class~="focus:border-[#1B7167]"]:focus { border-color: var(--agency-accent) !important; }
+[class~="focus:ring-[#1B7167]"]:focus { --tw-ring-color: var(--agency-accent) !important; }
+[class~="hover:bg-[#155A52]"]:hover,
+[class~="hover:bg-[#155b53]"]:hover { background-color: color-mix(in srgb, var(--agency-action) 86%, black) !important; }
+[class~="hover:bg-[#1B7167]"]:hover { background-color: var(--agency-action) !important; }
+[class~="hover:bg-[#1B7167]/10"]:hover { background-color: color-mix(in srgb, var(--agency-accent) 10%, transparent) !important; }
+[class~="hover:bg-[#1B7167]/20"]:hover { background-color: color-mix(in srgb, var(--agency-accent) 20%, transparent) !important; }
+
+[class~="bg-[#1B7167]/5"] { background-color: color-mix(in srgb, var(--agency-accent) 5%, transparent) !important; }
+[class~="bg-[#1B7167]/10"] { background-color: color-mix(in srgb, var(--agency-accent) 10%, transparent) !important; }
+[class~="bg-[#1B7167]/20"] { background-color: color-mix(in srgb, var(--agency-accent) 20%, transparent) !important; }
+[class~="bg-[#1B7167]/30"] { background-color: color-mix(in srgb, var(--agency-accent) 30%, transparent) !important; }
+[class~="border-[#1B7167]/20"] { border-color: color-mix(in srgb, var(--agency-accent) 20%, transparent) !important; }
+[class~="border-[#1B7167]/30"] { border-color: color-mix(in srgb, var(--agency-accent) 30%, transparent) !important; }
+[class~="border-[#1B7167]/40"] { border-color: color-mix(in srgb, var(--agency-accent) 40%, transparent) !important; }
+[class~="border-[#1B7167]/50"] { border-color: color-mix(in srgb, var(--agency-accent) 50%, transparent) !important; }
+[class~="border-[#1B7167]/60"] { border-color: color-mix(in srgb, var(--agency-accent) 60%, transparent) !important; }
+[class~="ring-[#1B7167]/15"] { --tw-ring-color: color-mix(in srgb, var(--agency-accent) 15%, transparent) !important; }
+[class~="ring-[#1B7167]/30"] { --tw-ring-color: color-mix(in srgb, var(--agency-accent) 30%, transparent) !important; }
+[class~="ring-[#1B7167]/40"] { --tw-ring-color: color-mix(in srgb, var(--agency-accent) 40%, transparent) !important; }
+[class~="focus:ring-[#1B7167]/30"]:focus { --tw-ring-color: color-mix(in srgb, var(--agency-accent) 30%, transparent) !important; }
+[class~="shadow-[#1B7167]/20"] { --tw-shadow-color: color-mix(in srgb, var(--agency-accent) 20%, transparent) !important; }
+[class~="shadow-[#1B7167]/25"] { --tw-shadow-color: color-mix(in srgb, var(--agency-accent) 25%, transparent) !important; }
+[class~="shadow-[#1B7167]/30"] { --tw-shadow-color: color-mix(in srgb, var(--agency-accent) 30%, transparent) !important; }
+html.dark [class~="dark:text-[#2DD4BF]"] { color: var(--agency-ink-dark) !important; }
+
+/* Existing purple utilities are legacy primary-action utilities. */
+@theme inline {
+  --color-purple-600: var(--agency-action, #6D28D9);
+  --color-purple-700: color-mix(in srgb, var(--agency-action, #6D28D9) 85%, black);
+}

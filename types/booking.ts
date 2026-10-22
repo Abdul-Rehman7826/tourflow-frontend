@@ -1,0 +1,121 @@
+export type BookingStatus = 'DRAFT' | 'DRAFT_QUOTATION' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+export type ServiceType = 'GROUP_TOUR' | 'VISA_CONSULTANCY' | 'UMRAH' | 'CUSTOM_PACKAGE';
+
+export interface InstallmentMilestone {
+  id: string;
+  tenant_id?: string;
+  tenantId?: string;
+  invoice_id?: string;
+  invoiceId?: string;
+  title: string;
+  name?: string;
+  amount: number;
+  due_date: string;
+  dueDate?: string;
+  status: 'PENDING' | 'PAID' | 'OVERDUE' | string;
+  isPaid?: boolean;
+  paid_at?: string | null;
+  paidAt?: string;
+  transactionRef?: string;
+}
+
+export interface TravelerManifestItem {
+  id: string;
+  tenant_id?: string;
+  tenantId?: string;
+  booking_id: string;
+  bookingId?: string;
+  tour_id?: string;
+  tourId?: string;
+  slot_number: number;
+  slotNumber?: number;
+  full_name?: string;
+  fullName?: string;
+  phone?: string;
+  passport_no?: string;
+  passportNo?: string;
+  passportNumber?: string;
+  passport_expiry?: string;
+  passportExpiry?: string;
+  dateOfBirth?: string;
+  room_preference: 'SINGLE' | 'DOUBLE' | 'TRIPLE' | 'FAMILY';
+  roomPreference?: 'SINGLE' | 'DOUBLE' | 'TRIPLE' | 'FAMILY';
+  assigned_room_id?: string;
+  assignedRoomId?: string;
+  roommateId?: string;
+  paymentStatus?: 'PAID' | 'PARTIAL' | 'UNPAID';
+  payment_status?: 'PAID' | 'PARTIAL' | 'UNPAID';
+  documents?: {
+    passportCopyUploaded: boolean;
+    visaGranted: boolean;
+    ticketIssued: boolean;
+  };
+  is_complete: boolean;
+  isComplete?: boolean;
+  notes?: string;
+}
+
+export interface Booking {
+  id: string;
+  tenant_id: string;
+  tenantId?: string;
+  booking_number: string; // Format: WCH-BK-XXXXXX
+  bookingNumber?: string;
+  client_id: string;
+  clientId?: string;
+  client_name?: string;
+  clientName?: string;
+  client_phone?: string;
+  clientPhone?: string;
+  lead_id?: string;
+  leadId?: string;
+  sourceLeadId?: string;
+  service_type: ServiceType;
+  serviceType?: ServiceType;
+  package_id?: string;
+  packageId?: string;
+  tour_id?: string;
+  tourId?: string;
+  package_title?: string;
+  packageTitle?: string;
+  tour_title?: string;
+  tourTitle?: string;
+  pax_count: number;
+  paxCount?: number;
+  agreed_price_per_pax: number;
+  agreedPricePerPax?: number;
+  total_agreed_amount: number;
+  totalAgreedAmount?: number;
+  tokenDeposit?: number;
+  token_deposit?: number;
+  assigned_rep: string;
+  assignedRep?: string;
+  status: BookingStatus;
+  payment_status?: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID';
+  paymentStatus?: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID';
+  invoice_id?: string;
+  invoiceId?: string;
+  cancellation_reason?: string;
+  cancellationReason?: string;
+  cancelled_at?: string;
+  cancelledAt?: string;
+  cancelledBy?: string;
+  cancelledByStaffId?: string;
+  retention_fee?: number;
+  retentionFee?: number;
+  refund_amount?: number;
+  refundAmount?: number;
+  refund?: import("@/types/erp").RefundRecord;
+  quoteConversion?: import("@/lib/lead-operations").Conversion;
+  quote_conversion?: Record<string, unknown>;
+  milestones?: InstallmentMilestone[];
+  travelers?: TravelerManifestItem[];
+  created_at: string;
+  createdAt?: string;
+  updated_at: string;
+  updatedAt?: string;
+  confirmed_at?: string;
+  confirmedAt?: string;
+  confirmed_by?: string;
+  confirmedBy?: string;
+}

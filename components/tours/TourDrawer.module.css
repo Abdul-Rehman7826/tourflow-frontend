@@ -1,0 +1,18 @@
+.overlay::backdrop {
+  background: rgb(0 0 0 / 40%);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.panel {
+  animation: tour-drawer-enter 220ms ease-out;
+}
+
+@keyframes tour-drawer-enter {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel { animation: none; }
+}
