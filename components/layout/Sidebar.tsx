@@ -92,6 +92,14 @@ export const ALL_NAV_ITEMS: NavItem[] = [
     allowedRoles: ["AGENCY_ADMIN", "TOUR_MANAGER"],
   },
   {
+    name: "Website CMS",
+    href: "/cms",
+    icon: Globe,
+    badgeVariant: "emerald",
+    description: "Website catalog, hero banner, gallery & visa insights",
+    allowedRoles: ["AGENCY_ADMIN", "TOUR_MANAGER"],
+  },
+  {
     name: "Visa Pipeline",
     href: "/visa-pipeline",
     icon: FileCheck2,
@@ -235,6 +243,7 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
     "/leads": "leads",
     "/clients": "clients",
     "/draft-bookings": "bookings",
+    "/cms": "tours",
     "/tours": "tours",
     "/visa-pipeline": "visaPipeline",
     "/documents": "visaPipeline",

@@ -76,7 +76,8 @@ export default function DashboardLayout({
     { prefix: "/expenses", permission: "hrAndPayroll" },
     { prefix: "/ledger", permission: "invoices" },
     { prefix: "/suppliers", permission: "tours" },
-    { prefix: "/cms", permission: "tours" },`r`n    { prefix: "/tours", permission: "tours" },
+    { prefix: "/cms", permission: "tours" },
+    { prefix: "/tours", permission: "tours" },
     { prefix: "/clients", permission: "clients" },
     { prefix: "/leads", permission: "leads" },
   ];
@@ -96,7 +97,8 @@ export default function DashboardLayout({
   const moduleRoutes: { prefix: string; module: SaasModule }[] = [
     { prefix: "/leads", module: "crm" },
     { prefix: "/clients", module: "crm" },
-    { prefix: "/cms", module: "tours" },`r`n    { prefix: "/tours", module: "tours" },
+    { prefix: "/cms", module: "tours" },
+    { prefix: "/tours", module: "tours" },
     { prefix: "/draft-bookings", module: "tours" },
     { prefix: "/suppliers", module: "tours" },
     { prefix: "/visa-pipeline", module: "visa" },
