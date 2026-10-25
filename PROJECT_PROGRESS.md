@@ -1,4 +1,4 @@
-# TourFlow ERP Implementation Progress and Agent Handoff
+﻿# TourFlow ERP Implementation Progress and Agent Handoff
 
 ## Document Purpose
 
@@ -15,6 +15,14 @@ distinguishes between:
 - prototype behavior that is browser-local and still requires production backend work.
 
 ## Current Repository Snapshot
+### Website CMS & Public Catalog Integration (2026-10-25)
+
+- Integrated Agency Website CMS directly into the TourFlow backoffice dashboard at `/cms`.
+- Agency Admins and Tour Managers can curate the public retail package catalog by toggling `is_published_web`, `is_featured_web`, marketing badges (`Guaranteed Departure`, `Best Seller`, `Early Bird`), and web hero images on ERP departures.
+- Staff can manage homepage Hero headlines and the 4 regulatory trust counters, delegation photo moments with destination tags, and travel advisory articles.
+- cPanel PHP backend routes registered under `/api/v1/cms/admin/*` and `/api/v1/public/*` with migration `015_website_cms_and_public_catalog.sql`.
+- Direct multipart file uploads are saved to `/public/uploads/cms/` on the cPanel server with dual-mode support for external CDN URLs.
+
 ### Shared attendance kiosk update (2026-10-04)
 
 - The PHP attendance backend supports multiple named, revocable shared terminals with hashed terminal credentials.
