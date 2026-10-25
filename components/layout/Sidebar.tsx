@@ -5,11 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ROLE_METADATA, useRole, UserRole } from "@/context/RoleContext";
 import { useAuth } from "@/context/AuthContext";
-import { useTenant } from "@/context/TenantContext";
 import type { ScreenAccessRules } from "@/types/erp";
 import { normalizeScreenAccess } from "@/lib/screen-access";
 import { apiClient } from "@/lib/api-client";
-import { AgencyLogo } from "@/components/settings/AgencyLogo";
 import {
   LayoutDashboard,
   UserPlus,
@@ -192,7 +190,6 @@ export const ALL_NAV_ITEMS: NavItem[] = [
 export function Sidebar({ mobile = false }: { mobile?: boolean }) {
   const { role: fallbackRole, roleMeta: fallbackRoleMeta, isSidebarCollapsed: collapsed, toggleSidebar } = useRole();
   const isSidebarCollapsed = !mobile && collapsed;
-  const { tenant } = useTenant();
   const { user } = useAuth();
   const pathname = usePathname();
   // The unlocked profile is the authority for navigation. RoleContext is retained
@@ -287,36 +284,6 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
         mobile ? "w-full min-h-full" : isSidebarCollapsed ? "w-[72px]" : "w-64"
       }`}
     >
-      {/* Active Tenant Context Card in Sidebar Header */}
-      <div className="p-3 border-b border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.02]">
-        <div
-          className={`flex items-center gap-2.5 p-2 rounded-xl transition-all ${
-            isSidebarCollapsed
-              ? "justify-center"
-              : "bg-gray-50 dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10"
-          }`}
-          title={`Tenant: ${tenant?.name || "World Class Holidays"} | Role: ${roleMeta.title}`}
-        >
-          <div
-            className="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 p-1 flex items-center justify-center text-xs font-black text-slate-800 dark:text-white shadow-xs shrink-0 overflow-hidden"
-          >
-            <AgencyLogo initials={tenant?.logoInitials || "WCH"} className="w-full h-full object-contain" />
-          </div>
-
-          {!isSidebarCollapsed && (
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-gray-500 dark:text-gray-400">
-                  Agency Workspace
-                </span>
-              </div>
-              <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
-                {tenant?.name || "World Class Holidays"}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Navigation Items List */}
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1 custom-scrollbar">
