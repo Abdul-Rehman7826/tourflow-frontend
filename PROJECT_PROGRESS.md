@@ -15,6 +15,11 @@ distinguishes between:
 - prototype behavior that is browser-local and still requires production backend work.
 
 ## Current Repository Snapshot
+### Auth & Setup Responsive Scrolling Fix (2026-11-03)
+
+- Fixed viewport clipping on /setup, /login, and /reset-password by replacing overflow-hidden with overflow-x-hidden overflow-y-auto on the root container.
+- Updated card alignment from rigid lex items-center to lex flex-col items-center justify-center with shrink-0 on headers/footers and my-auto py-4 on card wrappers. On small laptop and mobile screens, content flows down naturally and preserves full vertical scrolling down to the 4-digit PIN and submit actions.
+
 ### Website CMS & Public Catalog Integration (2026-10-25)
 
 - Integrated Agency Website CMS directly into the TourFlow backoffice dashboard at `/cms`.
