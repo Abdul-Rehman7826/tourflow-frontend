@@ -109,7 +109,7 @@ function ResetPasswordForm() {
     "w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-black/30 px-4 py-3 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition focus:border-[#1B7167] focus:ring-2 focus:ring-[#1B7167]/20 shadow-sm";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50/40 via-slate-50 to-emerald-50/20 dark:from-[#030B09] dark:via-[#06120E] dark:to-[#030B09] text-slate-900 dark:text-slate-100 flex flex-col selection:bg-emerald-500/20 relative overflow-x-hidden overflow-y-auto transition-colors duration-200">
+    <div className="h-screen h-dvh bg-gradient-to-br from-emerald-50/40 via-slate-50 to-emerald-50/20 dark:from-[#030B09] dark:via-[#06120E] dark:to-[#030B09] text-slate-900 dark:text-slate-100 flex flex-col selection:bg-emerald-500/20 relative overflow-hidden transition-colors duration-200">
       {/* Background ambient lighting and subtle grid */}
       <div className="absolute inset-0 bg-[radial-gradient(#1B7167_1px,transparent_1px)] opacity-[0.06] dark:opacity-[0.12] [background-size:24px_24px] pointer-events-none" />
       <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#1B7167]/15 dark:bg-[#1B7167]/20 rounded-full blur-[130px] pointer-events-none" />
@@ -149,7 +149,7 @@ function ResetPasswordForm() {
       </header>
 
       {/* Main Container */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 z-10">
+      <main className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 z-10 flex flex-col items-center">
         <div className="w-full max-w-lg space-y-5 my-auto py-4">
           <section className="bg-white/90 dark:bg-[#081512]/90 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 rounded-3xl p-6 sm:p-9 shadow-2xl shadow-emerald-950/5 dark:shadow-black/50 space-y-6">
             <div className="flex items-center justify-between">

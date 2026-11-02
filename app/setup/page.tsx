@@ -261,7 +261,7 @@ function SetupWizard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50/40 via-slate-50 to-emerald-50/20 dark:from-[#030B09] dark:via-[#06120E] dark:to-[#030B09] text-slate-900 dark:text-slate-100 flex flex-col selection:bg-emerald-500/20 relative overflow-x-hidden overflow-y-auto transition-colors duration-200">
+    <div className="h-screen h-dvh bg-gradient-to-br from-emerald-50/40 via-slate-50 to-emerald-50/20 dark:from-[#030B09] dark:via-[#06120E] dark:to-[#030B09] text-slate-900 dark:text-slate-100 flex flex-col selection:bg-emerald-500/20 relative overflow-hidden transition-colors duration-200">
       {/* Ambient background light halos */}
       <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-[#1B7167]/10 dark:bg-[#1B7167]/15 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[140px] pointer-events-none" />
@@ -297,7 +297,7 @@ function SetupWizard() {
       </header>
 
       {/* Main Wizard Form Card */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 z-10">
+      <main className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 z-10 flex flex-col items-center">
         <div className="w-full max-w-xl space-y-5 my-auto py-4">
           <div className="bg-white/90 dark:bg-[#081512]/90 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 rounded-3xl p-6 sm:p-9 shadow-2xl shadow-emerald-950/5 dark:shadow-black/50 space-y-6">
             
