@@ -213,7 +213,7 @@ export default function StaffManagementPage() {
                 setSelectedEmployeeForEdit(null);
                 setIsDrawerOpen(true);
               }}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2.5 rounded-xl transition-colors shadow-sm inline-flex items-center gap-2 cursor-pointer [&>svg]:text-white [&>span]:text-white"
+              className="bg-[#1B7167] hover:bg-[#155b53] text-white font-medium px-4 py-2.5 rounded-xl transition-colors shadow-sm inline-flex items-center gap-2 cursor-pointer [&>svg]:text-white [&>span]:text-white"
             >
               <Plus className="w-4 h-4 text-white" />
               <span>New Staff Intake</span>

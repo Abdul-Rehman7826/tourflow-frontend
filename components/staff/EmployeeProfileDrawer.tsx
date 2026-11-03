@@ -1065,7 +1065,7 @@ function EmployeeProfileDrawerDialog({
               onClick={() => {
                 if (validateStage1()) setStage(2);
               }}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2.5 rounded-xl transition-colors shadow-sm inline-flex items-center gap-2 cursor-pointer [&>svg]:text-white [&>span]:text-white"
+              className="bg-[#1B7167] hover:bg-[#155b53] text-white font-medium px-4 py-2.5 rounded-xl transition-colors shadow-sm inline-flex items-center gap-2 cursor-pointer [&>svg]:text-white [&>span]:text-white"
             >
               <span>Save & Continue to Compensation</span>
               <ArrowRight className="w-3.5 h-3.5 text-white" />
@@ -1078,7 +1078,7 @@ function EmployeeProfileDrawerDialog({
               onClick={() => {
                 if (validateStage2()) setStage(3);
               }}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2.5 rounded-xl transition-colors shadow-sm inline-flex items-center gap-2 cursor-pointer [&>svg]:text-white [&>span]:text-white"
+              className="bg-[#1B7167] hover:bg-[#155b53] text-white font-medium px-4 py-2.5 rounded-xl transition-colors shadow-sm inline-flex items-center gap-2 cursor-pointer [&>svg]:text-white [&>span]:text-white"
             >
               <span>Save & Continue to Credentials</span>
               <ArrowRight className="w-3.5 h-3.5 text-white" />
@@ -1090,7 +1090,7 @@ function EmployeeProfileDrawerDialog({
               type="button"
               disabled={isSubmitting}
               onClick={handleSubmit}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-5 py-2.5 rounded-xl transition-all shadow-md active:scale-95 inline-flex items-center gap-2 cursor-pointer disabled:opacity-50 [&>svg]:text-white [&>span]:text-white"
+              className="bg-[#1B7167] hover:bg-[#155b53] text-white font-medium px-5 py-2.5 rounded-xl transition-all shadow-md active:scale-95 inline-flex items-center gap-2 cursor-pointer disabled:opacity-50 [&>svg]:text-white [&>span]:text-white"
             >
               <CheckCircle2 className="w-4 h-4 text-white" />
               <span>

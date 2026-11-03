@@ -126,7 +126,7 @@ export function ShiftConfigModal({
               <button
                 type="button"
                 onClick={() => setIsCreating(true)}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs px-3 py-1.5 rounded-lg shadow-xs transition-all active:scale-95 inline-flex items-center gap-1.5 cursor-pointer [&>svg]:text-white [&>span]:text-white"
+                className="bg-[#1B7167] hover:bg-[#155b53] text-white font-medium text-xs px-3 py-1.5 rounded-lg shadow-xs transition-all active:scale-95 inline-flex items-center gap-1.5 cursor-pointer [&>svg]:text-white [&>span]:text-white"
               >
                 <Plus className="w-3.5 h-3.5 text-white" />
                 <span>Add Shift</span>
@@ -289,7 +289,7 @@ export function ShiftConfigModal({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs px-4 py-1.5 rounded-lg shadow-xs transition-all active:scale-95 inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 [&>svg]:text-white [&>span]:text-white"
+                className="bg-[#1B7167] hover:bg-[#155b53] text-white font-medium text-xs px-4 py-1.5 rounded-lg shadow-xs transition-all active:scale-95 inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 [&>svg]:text-white [&>span]:text-white"
               >
                 <Save className="w-3.5 h-3.5 text-white" />
                 <span>{isSubmitting ? "Saving..." : "Save Shift"}</span>

@@ -1,4 +1,4 @@
-﻿# TourFlow ERP Implementation Progress and Agent Handoff
+# TourFlow ERP Implementation Progress and Agent Handoff
 
 ## Document Purpose
 
@@ -15,6 +15,11 @@ distinguishes between:
 - prototype behavior that is browser-local and still requires production backend work.
 
 ## Current Repository Snapshot
+### Staff Management Theme Alignment (2026-11-03)
+
+- Replaced static `bg-emerald-600 hover:bg-emerald-500` classes on the "+ New Staff Intake" button on `/settings/staff`, the intake drawer CTA buttons (`EmployeeProfileDrawer`), and shift modal action buttons (`ShiftConfigModal`) with `bg-[#1B7167] hover:bg-[#155b53]`.
+- All primary actions in Staff Directory now dynamically inherit `--agency-action` via `globals.css`, matching the World Class Holidays agency accent theme.
+
 ### Auth & Setup Responsive Scrolling Fix (2026-11-03)
 
 - Fixed viewport clipping and locked headers/footers on /setup, /login, and /reset-password: Root container uses h-screen h-dvh overflow-hidden with shrink-0 on Header and Footer. Only the <main> container scrolls (lex-1 min-h-0 overflow-y-auto).
