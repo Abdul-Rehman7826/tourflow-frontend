@@ -1,13 +1,13 @@
-﻿"use client";
+"use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ROLE_METADATA, useRole, UserRole } from "@/context/RoleContext";
 import { useAuth } from "@/context/AuthContext";
+import { useData } from "@/context/DataContext";
 import type { ScreenAccessRules } from "@/types/erp";
 import { normalizeScreenAccess } from "@/lib/screen-access";
-import { apiClient } from "@/lib/api-client";
 import {
   LayoutDashboard,
   UserPlus,
@@ -198,22 +198,19 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
   const role = (user?.role as UserRole | undefined) || fallbackRole;
   const roleMeta = ROLE_METADATA?.[role] || fallbackRoleMeta;
   const effectiveAccess = normalizeScreenAccess(user?.screenAccess, role);
-  const [counts, setCounts] = useState({ new_leads: 0, pending_bookings: 0, active_tours: 0, overdue_invoices: 0 });
+  const { leads, bookings, tours, invoices } = useData();
 
-  useEffect(() => {
-    let active = true;
-    const loadCounts = async () => {
-      try {
-        const next = await apiClient.get<typeof counts>("/analytics/sidebar-counts");
-        if (active) setCounts(next);
-      } catch {
-        if (active) setCounts({ new_leads: 0, pending_bookings: 0, active_tours: 0, overdue_invoices: 0 });
-      }
-    };
-    void loadCounts();
-    const timer = window.setInterval(() => { void loadCounts(); }, 30_000);
-    return () => { active = false; window.clearInterval(timer); };
-  }, []);
+  const counts = useMemo(() => {
+    const new_leads = leads.filter((l) => l.status === "NEW" || (l.status as string) === "NEW_INQUIRY").length;
+    const pending_bookings = bookings.filter((b) => b.status === "DRAFT_QUOTATION" || (b.status as string) === "PENDING").length;
+    const active_tours = tours.filter((t) => t.status === "OPEN" || t.status === "FILLING_FAST" || t.status === "GUARANTEED").length;
+    const now = new Date();
+    const overdue_invoices = invoices.filter(
+      (inv) => inv.status !== "PAID" && inv.status !== "CANCELLED" && inv.dueDate && new Date(inv.dueDate) < now
+    ).length;
+
+    return { new_leads, pending_bookings, active_tours, overdue_invoices };
+  }, [leads, bookings, tours, invoices]);
   const liveBadges: Partial<Record<string, { label: string; variant: NavItem["badgeVariant"] }>> = {
     "/leads": counts.new_leads ? { label: `${counts.new_leads} New`, variant: "emerald" } : undefined,
     "/draft-bookings": counts.pending_bookings ? { label: `${counts.pending_bookings} Pending`, variant: "amber" } : undefined,

@@ -15,6 +15,11 @@ distinguishes between:
 - prototype behavior that is browser-local and still requires production backend work.
 
 ## Current Repository Snapshot
+### Sidebar Polling Elimination & DataContext Integration (2026-11-03)
+
+- Removed wasteful 30-second `setInterval` polling to `/analytics/sidebar-counts` in `components/layout/Sidebar.tsx`.
+- Replaced HTTP polling with reactive, zero-network `useMemo` counts read directly from authoritative `DataContext` (`leads`, `bookings`, `tours`, `invoices`), eliminating 404 network spam and delivering instantaneous badge updates.
+
 ### Staff Management Theme Alignment (2026-11-03)
 
 - Replaced static `bg-emerald-600 hover:bg-emerald-500` classes on the "+ New Staff Intake" button on `/settings/staff`, the intake drawer CTA buttons (`EmployeeProfileDrawer`), and shift modal action buttons (`ShiftConfigModal`) with `bg-[#1B7167] hover:bg-[#155b53]`.
