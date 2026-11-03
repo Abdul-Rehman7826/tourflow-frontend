@@ -13,6 +13,8 @@ import {
   Check,
   Upload,
   ArrowUpRight,
+  Mail,
+  KeyRound,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useTenant } from "@/context/TenantContext";
@@ -24,7 +26,11 @@ import {
 } from "@/components/invoices/InvoiceDocument";
 import type { Invoice } from "@/types/erp";
 import { apiClient } from "@/lib/api-client";
-import { updateTerminalSessionExpiryApi } from "@/lib/settings-api";
+import {
+  changeEmailApi,
+  changePasswordApi,
+  updateTerminalSessionExpiryApi,
+} from "@/lib/settings-api";
 import { resolveAssetUrl } from "@/lib/asset-url";
 
 const TABS = [
@@ -177,6 +183,25 @@ function SettingsEditor() {
   const [uploading, setUploading] = useState(false);
   const [terminalDays, setTerminalDays] = useState(user?.tenant?.terminal_session_expiry_days || 7);
   const [savingTerminal, setSavingTerminal] = useState(false);
+
+  // Change Email State
+  const [newEmail, setNewEmail] = useState("");
+  const [emailCurrentPassword, setEmailCurrentPassword] = useState("");
+  const [changingEmail, setChangingEmail] = useState(false);
+  const [emailNotice, setEmailNotice] = useState<{
+    text: string;
+    error?: boolean;
+  } | null>(null);
+
+  // Change Password State
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordNotice, setPasswordNotice] = useState<{
+    text: string;
+    error?: boolean;
+  } | null>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const id = useId();
   useEffect(() => {
@@ -311,6 +336,91 @@ function SettingsEditor() {
     }
   }
 
+  async function handleEmailChange(e: React.FormEvent) {
+    e.preventDefault();
+    const targetEmail = newEmail.trim().toLowerCase();
+    if (!targetEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(targetEmail)) {
+      setEmailNotice({ error: true, text: "Please enter a valid new email address." });
+      return;
+    }
+    if (!emailCurrentPassword) {
+      setEmailNotice({ error: true, text: "Current password is required to authorize email change." });
+      return;
+    }
+    if (user?.email && targetEmail === user.email.toLowerCase()) {
+      setEmailNotice({ error: true, text: "New email must be different from current email." });
+      return;
+    }
+    setChangingEmail(true);
+    setEmailNotice(null);
+    try {
+      const res = await changeEmailApi({
+        currentPassword: emailCurrentPassword,
+        newEmail: targetEmail,
+      });
+      setEmailNotice({ error: false, text: res.message || "Login email updated successfully." });
+      setNotice({ error: false, text: "Login email updated successfully." });
+      setNewEmail("");
+      setEmailCurrentPassword("");
+      if (typeof window !== "undefined") {
+        const cached = localStorage.getItem("tourflow_auth_user");
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            parsed.email = res.email || targetEmail;
+            localStorage.setItem("tourflow_auth_user", JSON.stringify(parsed));
+          } catch {
+            // Ignore storage parse errors
+          }
+        }
+      }
+    } catch (caught) {
+      setEmailNotice({
+        error: true,
+        text: caught instanceof Error ? caught.message : "Failed to update login email.",
+      });
+    } finally {
+      setChangingEmail(false);
+    }
+  }
+
+  async function handlePasswordChange(e: React.FormEvent) {
+    e.preventDefault();
+    if (!currentPassword) {
+      setPasswordNotice({ error: true, text: "Current password is required." });
+      return;
+    }
+    if (newPassword.length < 8) {
+      setPasswordNotice({ error: true, text: "New password must be at least 8 characters long." });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordNotice({ error: true, text: "New password and confirmation do not match." });
+      return;
+    }
+    setChangingPassword(true);
+    setPasswordNotice(null);
+    try {
+      const res = await changePasswordApi({
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      });
+      setPasswordNotice({ error: false, text: res.message || "Password updated successfully." });
+      setNotice({ error: false, text: "Password updated successfully." });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (caught) {
+      setPasswordNotice({
+        error: true,
+        text: caught instanceof Error ? caught.message : "Failed to update password.",
+      });
+    } finally {
+      setChangingPassword(false);
+    }
+  }
+
   return (
     <div className="settings-workspace space-y-6 pb-28">
       <header className="settings-hero">
@@ -378,7 +488,8 @@ function SettingsEditor() {
           tabIndex={0}
         >
           {index === 0 && (
-            <div className="settings-grid">
+            <div className="space-y-6">
+              <div className="settings-grid">
               <div className="settings-card space-y-6">
                 <div>
                   <p className="settings-eyebrow">01 / Identity</p>
@@ -450,7 +561,135 @@ function SettingsEditor() {
                 })()}
               </aside>
             </div>
-          )}
+
+            <div className="grid lg:grid-cols-2 gap-6 pt-2">
+              <form onSubmit={handleEmailChange} className="settings-card space-y-4">
+                <div>
+                  <p className="settings-eyebrow">02 / Authentication</p>
+                  <div className="flex items-center gap-2">
+                    <Mail size={18} className="text-[#1B7167]" />
+                    <h2>Change Login Email</h2>
+                  </div>
+                  <p>Change the login email address for your agency administrator profile.</p>
+                </div>
+
+                <div className="rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-3 flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Current Login Email</span>
+                  <span className="text-sm font-medium text-slate-900 dark:text-white break-all">
+                    {user?.email || "admin@worldclassholidays.org"}
+                  </span>
+                </div>
+
+                <Field title="New Login Email">
+                  <input
+                    type="email"
+                    required
+                    placeholder="e.g. director@worldclassholidays.org"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                  />
+                </Field>
+
+                <Field title="Current Password" hint="Required to verify identity and authorize email change">
+                  <input
+                    type="password"
+                    required
+                    placeholder="Enter your current password"
+                    value={emailCurrentPassword}
+                    onChange={(e) => setEmailCurrentPassword(e.target.value)}
+                  />
+                </Field>
+
+                {emailNotice && (
+                  <div
+                    className={`text-xs p-2.5 rounded-lg border ${
+                      emailNotice.error
+                        ? "bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400"
+                        : "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                    }`}
+                  >
+                    {emailNotice.text}
+                  </div>
+                )}
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={changingEmail || !newEmail || !emailCurrentPassword}
+                    className="settings-primary text-white font-medium [&>span]:text-white"
+                  >
+                    {changingEmail ? "Updating Email..." : "Update Login Email"}
+                  </button>
+                </div>
+              </form>
+
+              <form onSubmit={handlePasswordChange} className="settings-card space-y-4">
+                <div>
+                  <p className="settings-eyebrow">03 / Security</p>
+                  <div className="flex items-center gap-2">
+                    <KeyRound size={18} className="text-[#1B7167]" />
+                    <h2>Change Password</h2>
+                  </div>
+                  <p>Update your agency account password to keep your system and data protected.</p>
+                </div>
+
+                <Field title="Current Password">
+                  <input
+                    type="password"
+                    required
+                    placeholder="Enter current password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                  />
+                </Field>
+
+                <Field title="New Password" hint="Must be at least 8 characters">
+                  <input
+                    type="password"
+                    required
+                    minLength={8}
+                    placeholder="Enter new strong password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                </Field>
+
+                <Field title="Confirm New Password">
+                  <input
+                    type="password"
+                    required
+                    minLength={8}
+                    placeholder="Re-enter new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </Field>
+
+                {passwordNotice && (
+                  <div
+                    className={`text-xs p-2.5 rounded-lg border ${
+                      passwordNotice.error
+                        ? "bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400"
+                        : "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                    }`}
+                  >
+                    {passwordNotice.text}
+                  </div>
+                )}
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
+                    className="settings-primary text-white font-medium [&>span]:text-white"
+                  >
+                    {changingPassword ? "Updating Password..." : "Update Password"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
           {index === 1 && (
             <div className="settings-grid">
               <div className="settings-card space-y-6">

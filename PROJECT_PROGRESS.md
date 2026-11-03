@@ -15,6 +15,14 @@ distinguishes between:
 - prototype behavior that is browser-local and still requires production backend work.
 
 ## Current Repository Snapshot
+### Agency Admin Account Security: Change Login Email & Password (2026-11-03)
+
+- Added secure "Change Login Email" and "Change Password" controls to the Agency Settings page (`components/settings/SettingsWorkspace.tsx`) under Tab 0 ("Agency Profile").
+- Displays current login email from authenticated state with validation and identity verification via current password.
+- Added backend API endpoints `POST /api/v1/agency/change-email` and `POST /api/v1/agency/change-password` (with aliases under `/api/v1/auth/*`) in `backend/public/index.php` and `backend/src/Auth/AuthService.php`.
+- Implemented cryptographic password verification, uniqueness enforcement across accounts, synchronized agency settings email for administrative accounts, and updated cached session storage.
+- All 12 unit tests pass and full production Next.js build verified across all 31 routes.
+
 ### Agency Brand Logo Unification (2026-11-03)
 
 - Consolidated the split "Dark-mode logo" and "Light-mode logo" controls into a single unified "Agency Brand Logo" upload across `components/settings/SettingsWorkspace.tsx`.

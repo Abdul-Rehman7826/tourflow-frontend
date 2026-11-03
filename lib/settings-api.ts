@@ -55,3 +55,44 @@ export async function updateTerminalSessionExpiryApi(
 export async function fetchLicenseStatusApi(): Promise<TenantLicenseStatus> {
   return await apiClient.get<TenantLicenseStatus>("/agency/license-status");
 }
+
+export interface ChangeEmailPayload {
+  currentPassword: string;
+  newEmail: string;
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface AccountSecurityResponse {
+  success: boolean;
+  message: string;
+  email?: string;
+}
+
+/**
+ * Change administrative account login email.
+ */
+export async function changeEmailApi(
+  payload: ChangeEmailPayload,
+): Promise<AccountSecurityResponse> {
+  return await apiClient.post<AccountSecurityResponse>(
+    "/agency/change-email",
+    payload,
+  );
+}
+
+/**
+ * Change administrative account login password.
+ */
+export async function changePasswordApi(
+  payload: ChangePasswordPayload,
+): Promise<AccountSecurityResponse> {
+  return await apiClient.post<AccountSecurityResponse>(
+    "/agency/change-password",
+    payload,
+  );
+}
