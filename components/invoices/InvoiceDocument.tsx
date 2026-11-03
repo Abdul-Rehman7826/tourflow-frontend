@@ -108,10 +108,10 @@ export function InvoiceDocument({
     >
       <header className="invoice-letterhead">
         <div>
-          {Boolean(settings.lightLogo || settings.darkLogo || (settings as unknown as { logoUrl?: string }).logoUrl) && (
+          {Boolean(settings.logoUrl || settings.lightLogo || settings.darkLogo) && (
             <Image
               unoptimized
-              src={resolveAssetUrl(settings.lightLogo || settings.darkLogo || (settings as unknown as { logoUrl?: string }).logoUrl)}
+              src={resolveAssetUrl(settings.logoUrl || settings.lightLogo || settings.darkLogo)}
               width={140}
               height={56}
               className="invoice-logo object-contain max-h-14 w-auto mb-2"

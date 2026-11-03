@@ -25,6 +25,7 @@ import {
 import type { Invoice } from "@/types/erp";
 import { apiClient } from "@/lib/api-client";
 import { updateTerminalSessionExpiryApi } from "@/lib/settings-api";
+import { resolveAssetUrl } from "@/lib/asset-url";
 
 const TABS = [
   { title: "Agency Profile", icon: Building2 },
@@ -211,7 +212,7 @@ function SettingsEditor() {
     </Field>
   );
 
-  async function upload(file: File | undefined, key: "darkLogo" | "lightLogo") {
+  async function upload(file: File | undefined) {
     if (!file) return;
     if (
       !["image/png", "image/jpeg", "image/webp"].includes(file.type) ||
@@ -240,7 +241,7 @@ function SettingsEditor() {
         img.onerror = reject;
         img.src = url;
       });
-      change(key, url);
+      update({ logoUrl: url, lightLogo: url, darkLogo: url });
       setNotice(null);
     } catch {
       setNotice({
@@ -399,48 +400,54 @@ function SettingsEditor() {
               </div>
               <aside className="settings-card space-y-5">
                 <h2>Brand assets</h2>
-                <p>PNG, JPEG or WebP. Up to 500 KB each.</p>
-                {(["darkLogo", "lightLogo"] as const).map((key) => (
-                  <div key={key} className="space-y-2">
-                    <div
-                      className={`settings-logo-preview ${key === "darkLogo" ? "logo-dark" : "logo-light"}`}
-                    >
-                      {s[key] ? (
-                        <NextImage
-                          unoptimized
-                          width={180}
-                          height={80}
-                          src={s[key]}
-                          alt={`${key === "darkLogo" ? "Dark" : "Light"} mode logo preview`}
+                <p>PNG, JPEG or WebP. Up to 500 KB.</p>
+                {(() => {
+                  const activeLogo = s.logoUrl || s.lightLogo || s.darkLogo || "";
+                  const resolvedSrc = resolveAssetUrl(activeLogo);
+                  return (
+                    <div className="space-y-3">
+                      <div className="settings-logo-preview bg-slate-50 dark:bg-white/5 border border-dashed border-gray-300 dark:border-white/15 rounded-xl p-2 flex items-center justify-center min-h-[96px]">
+                        {resolvedSrc ? (
+                          <NextImage
+                            unoptimized
+                            width={180}
+                            height={80}
+                            src={resolvedSrc}
+                            alt="Agency Brand Logo"
+                            className="max-h-20 max-w-[90%] object-contain"
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center gap-1.5 text-gray-400">
+                            <Upload size={24} />
+                            <span className="text-[11px]">No logo uploaded</span>
+                          </div>
+                        )}
+                      </div>
+                      <Field title="Agency Brand Logo">
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          disabled={uploading}
+                          onChange={(event) => {
+                            void upload(event.target.files?.[0]);
+                            event.target.value = "";
+                          }}
                         />
-                      ) : (
-                        <Upload size={24} />
-                      )}
+                      </Field>
+                      {activeLogo ? (
+                        <button
+                          type="button"
+                          className="settings-link text-xs text-rose-500 hover:text-rose-600 dark:text-rose-400"
+                          onClick={() => {
+                            update({ logoUrl: "", lightLogo: "", darkLogo: "" });
+                          }}
+                        >
+                          Remove logo
+                        </button>
+                      ) : null}
                     </div>
-                    <Field
-                      title={`${key === "darkLogo" ? "Dark" : "Light"}-mode logo`}
-                    >
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        disabled={uploading}
-                        onChange={(event) => {
-                          void upload(event.target.files?.[0], key);
-                          event.target.value = "";
-                        }}
-                      />
-                    </Field>
-                    {s[key] && (
-                      <button
-                        type="button"
-                        className="settings-link"
-                        onClick={() => change(key, "")}
-                      >
-                        Remove logo
-                      </button>
-                    )}
-                  </div>
-                ))}
+                  );
+                })()}
               </aside>
             </div>
           )}

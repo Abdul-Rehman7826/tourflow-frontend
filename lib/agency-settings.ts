@@ -114,6 +114,17 @@ export function normalizeSettings(
       continue;
     Object.assign(result, { [key]: next });
   }
+
+  // Synchronize single unified agency brand logo across all keys
+  const unifiedLogo =
+    (typeof result.logoUrl === "string" && result.logoUrl.trim()) ||
+    (typeof result.lightLogo === "string" && result.lightLogo.trim()) ||
+    (typeof result.darkLogo === "string" && result.darkLogo.trim()) ||
+    "";
+  result.logoUrl = unifiedLogo;
+  result.lightLogo = unifiedLogo;
+  result.darkLogo = unifiedLogo;
+
   return result;
 }
 

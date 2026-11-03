@@ -15,6 +15,18 @@ distinguishes between:
 - prototype behavior that is browser-local and still requires production backend work.
 
 ## Current Repository Snapshot
+### Agency Brand Logo Unification (2026-11-03)
+
+- Consolidated the split "Dark-mode logo" and "Light-mode logo" controls into a single unified "Agency Brand Logo" upload across `components/settings/SettingsWorkspace.tsx`.
+- Automatically synchronizes `logoUrl`, `lightLogo`, and `darkLogo` in frontend state (`lib/agency-settings.ts`, `ThemeContext.tsx`, `components/settings/AgencyLogo.tsx`, `components/invoices/InvoiceDocument.tsx`) and backend API (`AgencySettingsService.php`).
+- Resolves all relative `/uploads/branding/...` asset paths to backend API origin via `resolveAssetUrl()`, eliminating 404 image errors on settings and invoices.
+- Database persistence now updates `logo_url`, `light_logo`, and `dark_logo` simultaneously in `agency_settings` for seamless backward compatibility.
+
+### Settings Brand Asset URL Resolution (2026-11-03)
+
+- Wrapped `s.darkLogo` and `s.lightLogo` preview image sources with `resolveAssetUrl()` in `components/settings/SettingsWorkspace.tsx`.
+- Relative API upload paths (`/uploads/branding/...`) now resolve to the backend API origin (`https://api.worldclassholidays.org/...`) instead of requesting from the frontend host (`https://app.worldclassholidays.org`), fixing broken logo previews on the Agency Settings page.
+
 ### Sidebar Polling Elimination & DataContext Integration (2026-11-03)
 
 - Removed wasteful 30-second `setInterval` polling to `/analytics/sidebar-counts` in `components/layout/Sidebar.tsx`.

@@ -18,9 +18,9 @@ export function AgencyLogo({
   const [hasError, setHasError] = useState(false);
 
   const rawLogo =
+    settings.logoUrl ||
     settings.lightLogo ||
     settings.darkLogo ||
-    (settings as { logoUrl?: string }).logoUrl ||
     "";
 
   const resolvedLogo = resolveAssetUrl(rawLogo);
