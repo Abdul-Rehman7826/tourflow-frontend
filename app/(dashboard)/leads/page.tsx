@@ -32,6 +32,7 @@ import { PaymentVerificationQueue } from "@/components/invoices/PaymentRecoveryA
 import { SubmitPaymentProofModal } from "@/components/leads/SubmitPaymentProofModal";
 import { RecoveryCallLogModal } from "@/components/leads/RecoveryCallLogModal";
 import { VerifyPaymentModal } from "@/components/invoices/VerifyPaymentModal";
+import { DashboardPageSkeleton } from "@/components/ui/Skeleton";
 
 import {
   UserPlus,
@@ -263,7 +264,14 @@ function LeadsWorkspace() {
     setStatusFilter("ALL");
   };
 
-  if (!isHydrated || !user) return <p role="status" className="p-8 text-sm text-gray-500">Loading call center queues...</p>;
+  if (!isHydrated || !user) {
+    return (
+      <DashboardPageSkeleton
+        title="Call Center &amp; Lead Queues"
+        subtitle="Loading customer leads, queue filters and interaction history..."
+      />
+    );
+  }
 
   const isAllowed = [
     "AGENCY_ADMIN",

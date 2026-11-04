@@ -5,6 +5,7 @@ import { RoleProvider } from "@/context/RoleContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { DataProvider } from "@/context/DataContext";
 import { ThemeProvider, AgencyThemeProvider } from "@/context/ThemeContext";
+import { NavigationProgressBar } from "@/components/layout/NavigationProgressBar";
 
 export const metadata: Metadata = {
   title: "World Class Holidays | CRM & Travel Operations Platform",
@@ -22,6 +23,7 @@ export default function RootLayout({
       <body
         className="font-sans h-full min-h-screen bg-[#EFF1EB] dark:bg-[#09110F] text-[#161A17] dark:text-[#F1F5F2] flex flex-col selection:bg-purple-500/30 selection:text-purple-600 dark:selection:text-purple-200 transition-colors duration-200"
       >
+        <NavigationProgressBar />
         <ThemeProvider>
           <TenantProvider>
             <RoleProvider>

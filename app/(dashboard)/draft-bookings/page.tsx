@@ -8,6 +8,7 @@ import { ConvertLeadModal } from "@/components/leads/ConvertLeadModal";
 import { BookingDetailDrawer } from "@/components/bookings/BookingDetailDrawer";
 import { useMounted } from "@/lib/use-mounted";
 import { Booking } from "@/types/erp";
+import { DashboardPageSkeleton } from "@/components/ui/Skeleton";
 import {
   FileText,
   Search,
@@ -81,14 +82,12 @@ export default function DraftBookingsPage() {
     return Math.round((totalPax / drafts.length) * 10) / 10;
   }, [drafts]);
 
-  if (!mounted) {
+  if (!mounted || !crmReady) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="flex items-center gap-3 text-sm text-gray-500">
-          <div className="w-5 h-5 border-2 border-[#1B7167] border-t-transparent rounded-full animate-spin" />
-          <span>Loading quotations...</span>
-        </div>
-      </div>
+      <DashboardPageSkeleton
+        title="Draft Bookings &amp; Quotations"
+        subtitle="Loading quotation pipeline and reserved seats..."
+      />
     );
   }
 
@@ -115,16 +114,7 @@ export default function DraftBookingsPage() {
     );
   }
 
-  if (!crmReady) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="flex items-center gap-3 text-sm text-gray-500">
-          <div className="w-5 h-5 border-2 border-[#1B7167] border-t-transparent rounded-full animate-spin" />
-          <span>Loading quotations...</span>
-        </div>
-      </div>
-    );
-  }
+
 
   const selectedLead = leads.find((l) => l.id === leadId);
 

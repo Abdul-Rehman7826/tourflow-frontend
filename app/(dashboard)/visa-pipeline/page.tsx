@@ -7,6 +7,7 @@ import { useAgencySettings } from "@/context/ThemeContext";
 import { VisaCaseDetailDrawer, VISA_STAGES, CUSTODY_LOCATIONS, visaLabel } from "@/components/visa/VisaCaseDetailDrawer";
 import { CreateVisaCaseModal } from "@/components/visa/CreateVisaCaseModal";
 import { VisaOperationsModal } from "@/components/visa/VisaOperationsModal";
+import { DashboardPageSkeleton } from "@/components/ui/Skeleton";
 import type { VisaCase, VisaStage } from "@/types/erp";
 import {
   ShieldCheck,
@@ -85,7 +86,14 @@ export default function VisaPipelinePage() {
     return cases.find((c) => c.id === selectedCaseId) || null;
   }, [cases, selectedCaseId]);
 
-  if (!isHydrated || !user) return <p role="status">Loading visa pipeline...</p>;
+  if (!isHydrated || !user) {
+    return (
+      <DashboardPageSkeleton
+        title="Visa Processing Pipeline"
+        subtitle="Loading embassy filings and passport tracking..."
+      />
+    );
+  }
 
   // Role Gate check (403 Forbidden)
   const isAuthorized = ["SUPER_ADMIN", "AGENCY_ADMIN", "FRONT_DESK", "VISA_CONSULTANT"].includes(user.role);

@@ -15,6 +15,13 @@ distinguishes between:
 - prototype behavior that is browser-local and still requires production backend work.
 
 ## Current Repository Snapshot
+### Skeleton Loading States & Navigation Progress Feedback (2026-11-04)
+
+- Integrated real-time route navigation feedback via `NavigationProgressBar` (`components/layout/NavigationProgressBar.tsx`) mounted in `app/layout.tsx`. On slower networks or high-latency transitions, clicking any route or sidebar link immediately illuminates a glowing 3px progress bar in `--agency-action` / `--agency-accent` (`#1B7167` / `#2DD4BF`), completely removing UI freeze sensations.
+- Created reusable animated skeleton primitives in `components/ui/Skeleton.tsx`: `Skeleton` (with CSS-driven `skeleton-shimmer` animation in `app/globals.css`), `CardSkeleton` (KPI metric cards), `TableSkeleton` (data tables), `DashboardPageSkeleton` (standard ERP page placeholder), and `SettingsSkeleton`.
+- Added App Router Suspense streaming via `app/(dashboard)/loading.tsx` and `app/loading.tsx`. Next.js now immediately renders layout-aware skeletons during route chunk downloads and server-side streaming.
+- Replaced bare unstyled loading text strings across dashboard workspaces (`leads/page.tsx`, `clients/page.tsx`, `visa-pipeline/page.tsx`, `draft-bookings/page.tsx`) with full `DashboardPageSkeleton` placeholders, keeping `role="status"` accessibility attributes intact.
+
 ### Agency Admin Account Security: Change Login Email & Password (2026-11-03)
 
 - Added secure "Change Login Email" and "Change Password" controls to the Agency Settings page (`components/settings/SettingsWorkspace.tsx`) under Tab 0 ("Agency Profile").

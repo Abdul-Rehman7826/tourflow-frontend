@@ -6,13 +6,21 @@ import { useData } from "@/context/DataContext";
 import { useAgencySettings } from "@/context/ThemeContext";
 import { cleanPhone } from "@/lib/lead-operations";
 import { leadInput } from "@/components/leads/LeadDialog";
+import { DashboardPageSkeleton } from "@/components/ui/Skeleton";
 
 export default function ClientsPage() {
   const { user, isHydrated } = useAuth();
   const { clients, tours, leads } = useData();
   const { settings, formatMoney } = useAgencySettings();
   const [search, setSearch] = useState("");
-  if (!isHydrated || !user) return <p role="status">Loading clients...</p>;
+  if (!isHydrated || !user) {
+    return (
+      <DashboardPageSkeleton
+        title="Clients Directory"
+        subtitle="Loading client profiles and package history..."
+      />
+    );
+  }
   if (!["AGENCY_ADMIN", "FRONT_DESK", "VISA_CONSULTANT"].includes(user.role))
     return <p role="alert">Access Restricted</p>;
   const filtered = clients.filter((c) =>
