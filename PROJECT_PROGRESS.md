@@ -15,6 +15,29 @@ distinguishes between:
 - prototype behavior that is browser-local and still requires production backend work.
 
 ## Current Repository Snapshot
+### Lead Intake Pax Default, Agency Offers & Comprehensive Form Validation (2026-11-06)
+
+- Refactored Front Desk Lead Intake modal (`components/leads/NewLeadModal.tsx`):
+  - Fixed `Number of Passengers (Pax)` default from `2` to `1` by default for single lead inquiries.
+  - Implemented controlled stepper input (`[-]` and `[+]` buttons) and clean numeric parsing (`parsePaxInput`), capping at bounds (1 to 100) and preventing sticky zero or typing glitches when backspacing.
+  - Added real-time **Agency Offer Selector & Pitch Display**:
+    - Surfaces active agency offers across travel categories (`Fixed Group Tour`, `Executive Umrah Package`, `Visa Advisory & Processing`, `Custom Tailored Itinerary`).
+    - Dynamically merges live open group tours from `DataContext` (`tours`) with flagship offers.
+    - Displays a live **Agency Offer Pitch Card** calculating the total offer in real-time (`pricePerPerson × paxCount = total offer`), with inclusions and an instant 1-click `Set as Target Budget` action.
+    - Selecting an offer auto-populates the target destination and suggests the calculated budget while still allowing custom destinations and manual budget overrides.
+  - Established comprehensive inline form validation across all intake fields:
+    - `Traveler Full Name`: required, minimum 2 characters, requires alphabetical characters.
+    - `WhatsApp / Phone Number`: required, minimum 7 digits.
+    - `Email Address`: optional, strictly validated when provided (`name@domain.com`).
+    - `Destination / Package Offer`: required, either selected from agency offers or specified manually.
+    - `Number of Passengers (Pax)`: required, bounded between 1 and 100 pax.
+    - `Scheduled Callback / Follow-up`: required valid callback date.
+    - `Assigned Front Desk Rep`: required active Front Desk staff selection.
+  - Added field-level error styling (red border, red focus ring, light-red tint, alert icons) and a top global error banner summarizing issues on failed submission attempts.
+  - Re-themed modal accents and actions from legacy purple to agency primary teal (`#1B7167` / `--agency-action`) to match the rest of the application.
+  - Added unit test suite `tests/lead-intake.test.cjs` covering pax defaults, stepper bounds, validation rules, and offer calculations (4/4 passing).
+  - TypeScript type check (`tsc --noEmit`) and production Next.js build verified with zero errors across all 31 routes.
+
 ### Staff Intake Onboarding & Formatted CNIC Masking (2026-11-06)
 
 - Refactored field labeling and identity requirements in the Staff Intake & Onboarding drawer (`components/staff/EmployeeProfileDrawer.tsx`):
