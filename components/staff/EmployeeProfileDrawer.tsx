@@ -91,6 +91,19 @@ function secureRandomInt(maxExclusive: number) {
   return value[0] % maxExclusive;
 }
 
+export function generateDefaultPassword(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let pass = "TF-";
+  for (let i = 0; i < 6; i++) {
+    pass += chars.charAt(secureRandomInt(chars.length));
+  }
+  return pass;
+}
+
+export function generateDefaultPin(): string {
+  return String(1000 + secureRandomInt(9000));
+}
+
 export function EmployeeProfileDrawer({
   isOpen,
   onClose,
@@ -136,7 +149,6 @@ function EmployeeProfileDrawerDialog({
   const [stage, setStage] = useState<1 | 2 | 3>(1);
   const [copiedPassword, setCopiedPassword] = useState(false);
   const [copiedPin, setCopiedPin] = useState(false);
-  const [showQuickPin, setShowQuickPin] = useState(false);
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showValidationErrors, setShowValidationErrors] = useState(false);
@@ -259,9 +271,12 @@ function EmployeeProfileDrawerDialog({
     () => linkedAccount?.role || "FRONT_DESK"
   );
   const [temporaryPassword, setTemporaryPassword] = useState<string>(
-    ""
+    () => (employee ? "" : generateDefaultPassword())
   );
-  const [quickPin, setQuickPin] = useState("");
+  const [quickPin, setQuickPin] = useState<string>(
+    () => (employee ? "" : generateDefaultPin())
+  );
+  const [showQuickPin, setShowQuickPin] = useState<boolean>(!employee);
   const [avatarColor, setAvatarColor] = useState("#1B7167");
   const [screenAccess, setScreenAccess] = useState<ScreenAccessRules>(
     () =>
@@ -324,16 +339,11 @@ function EmployeeProfileDrawerDialog({
   }, [departmentId, employee]);
 
   const generatePassword = () => {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let pass = "TF-";
-    for (let i = 0; i < 6; i++) {
-      pass += chars.charAt(secureRandomInt(chars.length));
-    }
-    setTemporaryPassword(pass);
+    setTemporaryPassword(generateDefaultPassword());
   };
 
   const generatePin = () => {
-    setQuickPin(String(1000 + secureRandomInt(9000)));
+    setQuickPin(generateDefaultPin());
     setShowQuickPin(true);
   };
 
@@ -529,12 +539,15 @@ function EmployeeProfileDrawerDialog({
       screenAccess,
     };
 
+    const passwordToSend = temporaryPassword.trim() || (!isEditing ? generateDefaultPassword() : undefined);
+    const pinToSend = quickPin.trim() || (!isEditing ? generateDefaultPin() : undefined);
+
     const authPayload = isAdmin ? {
       accessGranted: grantAccess,
       role: systemRole,
-      password: temporaryPassword || undefined,
+      password: passwordToSend,
       screenAccess,
-      quickPin: quickPin || undefined,
+      quickPin: pinToSend,
       avatarColor,
       avatarIcon: "user",
     } : undefined;
@@ -1138,90 +1151,159 @@ function EmployeeProfileDrawerDialog({
 
               {grantAccess && (
                 <>
-                  {/* System Role & Password */}
-                  <div className="space-y-3 p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.02]">
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                        Base System Role *
-                      </label>
-                      <select
-                        value={systemRole}
-                        onChange={(e) => handleRoleChange(e.target.value as UserRole)}
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-[#121824] text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167]"
-                      >
-                        {ROLES.map((r) => (
-                          <option key={r.value} value={r.value}>
-                            {r.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  {/* System Role */}
+                  <div className="space-y-1 p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.02]">
+                    <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                      Base System Role *
+                    </label>
+                    <select
+                      value={systemRole}
+                      onChange={(e) => handleRoleChange(e.target.value as UserRole)}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-[#121824] text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167]"
+                    >
+                      {ROLES.map((r) => (
+                        <option key={r.value} value={r.value}>
+                          {r.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
+                  {/* Primary Credential: 4-Digit Quick PIN */}
+                  <div className="space-y-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/[0.02]">
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                          {isEditing ? "Reset Access Password (Optional)" : "Temporary Password *"}
+                        <label className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          4-Digit Quick PIN (Primary Workstation Access)
                         </label>
                         <button
                           type="button"
-                          onClick={generatePassword}
-                          className="text-[10px] font-bold text-[#1B7167] dark:text-teal-400 hover:underline cursor-pointer"
+                          onClick={generatePin}
+                          className="text-[10px] font-bold text-[#1B7167] hover:underline dark:text-teal-400 cursor-pointer"
                         >
-                          Generate New Key
+                          🎲 Re-roll PIN
                         </button>
                       </div>
                       <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder={isEditing ? "Leave blank to keep existing" : "TF@849201"}
-                          value={temporaryPassword}
-                          onChange={(e) => setTemporaryPassword(e.target.value)}
-                          className="flex-1 px-3 py-2 text-xs font-mono rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-black/30 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167]"
-                        />
-                        {temporaryPassword && (
+                        <div className="relative flex-1">
+                          <input
+                            type={showQuickPin ? "text" : "password"}
+                            inputMode="numeric"
+                            maxLength={4}
+                            pattern="[0-9]{4}"
+                            autoComplete="off"
+                            value={quickPin}
+                            onChange={(event) => setQuickPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
+                            placeholder={isEditing ? "Leave blank to keep current PIN" : "4 digits"}
+                            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 pr-10 font-mono text-xs tracking-[0.35em] font-bold text-gray-900 focus:outline-hidden focus:ring-1 focus:ring-[#1B7167] dark:border-white/10 dark:bg-black/30 dark:text-white"
+                          />
                           <button
                             type="button"
-                            onClick={copyPassword}
-                            className="px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-gray-50 text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1 cursor-pointer"
+                            onClick={() => setShowQuickPin((current) => !current)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer"
+                            aria-label={showQuickPin ? "Hide PIN" : "View PIN"}
                           >
-                            {copiedPassword ? (
-                              <>
-                                <Check className="w-3.5 h-3.5 text-emerald-500" />
-                                <span className="text-emerald-500">Copied</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-3.5 h-3.5" />
-                                <span>Copy</span>
-                              </>
-                            )}
+                            {showQuickPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50/50 p-4 dark:border-white/10 dark:bg-white/[0.02]">
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-gray-700 dark:text-gray-300">4-Digit Quick PIN</label>
-                        <button type="button" onClick={generatePin} className="text-[10px] font-bold text-[#1B7167] hover:underline dark:text-teal-400">🎲 Generate PIN</button>
-                      </div>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <input type={showQuickPin ? "text" : "password"} inputMode="numeric" maxLength={4} pattern="[0-9]{4}" value={quickPin} onChange={(event) => setQuickPin(event.target.value.replace(/\D/g, "").slice(0, 4))} placeholder={isEditing ? "Leave blank to keep current PIN" : "4 digits"} className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 pr-10 font-mono text-xs tracking-[0.35em] text-gray-900 focus:outline-hidden focus:ring-1 focus:ring-[#1B7167] dark:border-white/10 dark:bg-black/30 dark:text-white" />
-                          <button type="button" onClick={() => setShowQuickPin((current) => !current)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-500" aria-label={showQuickPin ? "Hide PIN" : "View PIN"}>{showQuickPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
                         </div>
-                        <button type="button" onClick={copyPin} disabled={!quickPin} className="rounded-xl border border-gray-200 bg-white px-3 text-xs font-medium text-gray-700 disabled:opacity-40 dark:border-white/10 dark:bg-white/5 dark:text-gray-300">{copiedPin ? "Copied" : "Copy"}</button>
+                        <button
+                          type="button"
+                          onClick={copyPin}
+                          disabled={!quickPin}
+                          className="rounded-xl border border-gray-200 bg-white px-3 text-xs font-medium text-gray-700 disabled:opacity-40 hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-gray-300 cursor-pointer"
+                        >
+                          {copiedPin ? "Copied" : "Copy"}
+                        </button>
                       </div>
-                      <p className="text-[10px] text-gray-400">{isEditing ? "Existing PINs are hash-only. Generate or enter a replacement to reveal and copy it." : "Used only for fast profile switching on an authorized terminal."}</p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                        {isEditing
+                          ? "Existing PINs are hash-secured. Enter a replacement to reveal and copy it."
+                          : "Primary PIN used by the employee to unlock their profile on office terminals and punch attendance."}
+                      </p>
                     </div>
-                    <fieldset>
+
+                    <fieldset className="pt-2 border-t border-gray-200/60 dark:border-white/5">
                       <legend className="text-xs font-bold text-gray-700 dark:text-gray-300">Profile avatar color</legend>
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {AVATAR_COLORS.map((color) => <label key={color} className="cursor-pointer"><input type="radio" name="avatar-color" value={color} checked={avatarColor === color} onChange={() => setAvatarColor(color)} className="sr-only" /><span className={`flex h-9 w-9 items-center justify-center rounded-xl border-2 ${avatarColor === color ? "border-gray-900 ring-2 ring-[#1B7167]/30 dark:border-white" : "border-transparent"}`} style={{ backgroundColor: color }}>{avatarColor === color && <Check className="h-4 w-4 text-white" />}</span></label>)}
+                        {AVATAR_COLORS.map((color) => (
+                          <label key={color} className="cursor-pointer">
+                            <input
+                              type="radio"
+                              name="avatar-color"
+                              value={color}
+                              checked={avatarColor === color}
+                              onChange={() => setAvatarColor(color)}
+                              className="sr-only"
+                            />
+                            <span
+                              className={`flex h-8 w-8 items-center justify-center rounded-xl border-2 transition-transform active:scale-95 ${
+                                avatarColor === color
+                                  ? "border-gray-900 ring-2 ring-[#1B7167]/40 dark:border-white"
+                                  : "border-transparent opacity-80 hover:opacity-100"
+                              }`}
+                              style={{ backgroundColor: color }}
+                            >
+                              {avatarColor === color && <Check className="h-4 w-4 text-white" />}
+                            </span>
+                          </label>
+                        ))}
                       </div>
                     </fieldset>
+                  </div>
+
+                  {/* Secondary Credential: Auto-Generated Remote Password */}
+                  <div className="space-y-2 p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.02]">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block">
+                          {isEditing ? "Reset Access Password (Optional)" : "Remote Web Password (Auto-Generated)"}
+                        </label>
+                        <p className="text-[10px] text-gray-400">
+                          {isEditing
+                            ? "Leave blank to keep existing password."
+                            : "Pre-generated for optional remote web login. Staff can change it on first login."}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={generatePassword}
+                        className="text-[10px] font-bold text-[#1B7167] dark:text-teal-400 hover:underline cursor-pointer"
+                      >
+                        🎲 New Key
+                      </button>
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        name="new_staff_remote_credential_key"
+                        autoComplete="new-password"
+                        data-lpignore="true"
+                        placeholder={isEditing ? "Leave blank to keep existing" : "TF-XXXXXX"}
+                        value={temporaryPassword}
+                        onChange={(e) => setTemporaryPassword(e.target.value)}
+                        className="flex-1 px-3 py-2 text-xs font-mono rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-black/30 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167]"
+                      />
+                      {temporaryPassword && (
+                        <button
+                          type="button"
+                          onClick={copyPassword}
+                          className="px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-gray-50 text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1 cursor-pointer"
+                        >
+                          {copiedPassword ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-500" />
+                              <span className="text-emerald-500">Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>Copy</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Granular Screen Access Matrix */}

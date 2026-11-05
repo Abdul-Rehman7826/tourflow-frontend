@@ -28,6 +28,10 @@ distinguishes between:
   - Users can completely backspace/clear the input to an empty state without an obstinate sticky `0` reappearing.
   - Strips leading zeros when typing new numbers (e.g. typing `454` renders cleanly as `454` instead of `0454`).
   - Uses `type="text"` with `inputMode="numeric"` to maintain exact controlled string values and avoid native browser spin-button cursor jumps, while cleanly converting to numeric types upon payload submission.
+- Streamlined Stage 3 System Access credentials in `components/staff/EmployeeProfileDrawer.tsx`:
+  - Elevated the **4-Digit Quick PIN** as the primary workstation access credential with green highlight styling, pulse dot, pre-generated 4-digit random PIN, view toggle, and 1-click copy.
+  - Automated background generation of temporary remote passwords (`generateDefaultPassword()`, e.g. `TF-XXXXXX`) so administrators do not have to think of or type passwords during staff intake.
+  - Added `autoComplete="new-password"` and `data-lpignore="true"` to prevent browser password managers from erroneously autofilling admin emails into new employee credential fields.
 - All unit tests passing (15/15 including `staff-intake.test.cjs` and `settings.test.cjs`) with clean TypeScript checks and production Next.js build.
 
 ### Skeleton Loading States & Navigation Progress Feedback (2026-11-04)
