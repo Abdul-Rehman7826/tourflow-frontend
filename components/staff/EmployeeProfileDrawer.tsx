@@ -72,6 +72,17 @@ export function formatCnic(value: string): string {
   return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12, 13)}`;
 }
 
+export function parseNumericInput(raw: string, max?: number): string {
+  const clean = raw.replace(/\D/g, "");
+  if (!clean) return "";
+  const noLeadingZero = clean.replace(/^0+(?=\d)/, "");
+  if (max !== undefined) {
+    const num = Number(noLeadingZero);
+    if (num > max) return String(max);
+  }
+  return noLeadingZero;
+}
+
 function secureRandomInt(maxExclusive: number) {
   const range = 0x1_0000_0000;
   const limit = range - (range % maxExclusive);
@@ -218,11 +229,11 @@ function EmployeeProfileDrawerDialog({
   const [shiftId, setShiftId] = useState<string>(
     () => employee?.shiftId || employee?.shift_id || shifts[0]?.id || "shift-regular"
   );
-  const [basicSalary, setBasicSalary] = useState<number>(
-    () => (employee ? Number(employee.basicSalary ?? employee.basic_salary ?? 0) : 75000)
+  const [basicSalary, setBasicSalary] = useState<string>(
+    () => (employee ? String(employee.basicSalary ?? employee.basic_salary ?? "0") : "75000")
   );
-  const [allowances, setAllowances] = useState<number>(
-    () => (employee ? Number(employee.allowances ?? 0) : 15000)
+  const [allowances, setAllowances] = useState<string>(
+    () => (employee ? String(employee.allowances ?? "0") : "15000")
   );
   const [bankName, setBankName] = useState<string>(
     () => employee?.bankName || employee?.bank_name || "Meezan Bank Ltd"
@@ -233,11 +244,11 @@ function EmployeeProfileDrawerDialog({
   const [bankIban, setBankIban] = useState<string>(
     () => employee?.bankIban || employee?.bank_iban || "PK"
   );
-  const [annualLeaveAllowance, setAnnualLeaveAllowance] = useState<number>(
-    () => Number(employee?.annualLeaveAllowance ?? employee?.annual_leave_allowance ?? 14)
+  const [annualLeaveAllowance, setAnnualLeaveAllowance] = useState<string>(
+    () => String(employee?.annualLeaveAllowance ?? employee?.annual_leave_allowance ?? "14")
   );
-  const [sickLeaveAllowance, setSickLeaveAllowance] = useState<number>(
-    () => Number(employee?.sickLeaveAllowance ?? employee?.sick_leave_allowance ?? 8)
+  const [sickLeaveAllowance, setSickLeaveAllowance] = useState<string>(
+    () => String(employee?.sickLeaveAllowance ?? employee?.sick_leave_allowance ?? "8")
   );
 
   // Stage 3: Runtime Credentials & Screen Permissions
@@ -464,8 +475,8 @@ function EmployeeProfileDrawerDialog({
       setFormError("Please assign an operational work shift.");
       return false;
     }
-    if (isAdmin && basicSalary < 0) {
-      setFormError("Basic salary cannot be negative.");
+    if (isAdmin && (basicSalary === "" || Number(basicSalary) < 0)) {
+      setFormError("Basic salary cannot be negative or empty.");
       return false;
     }
     setFormError("");
@@ -983,12 +994,12 @@ function EmployeeProfileDrawerDialog({
                         Basic Salary (PKR) *
                       </label>
                       <input
-                        type="number"
-                        min={0}
-                        step={1000}
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="0"
                         required
                         value={basicSalary}
-                        onChange={(e) => setBasicSalary(Number(e.target.value))}
+                        onChange={(e) => setBasicSalary(parseNumericInput(e.target.value))}
                         className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-black/30 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167]"
                       />
                     </div>
@@ -998,11 +1009,11 @@ function EmployeeProfileDrawerDialog({
                         Monthly Allowances (PKR)
                       </label>
                       <input
-                        type="number"
-                        min={0}
-                        step={500}
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="0"
                         value={allowances}
-                        onChange={(e) => setAllowances(Number(e.target.value))}
+                        onChange={(e) => setAllowances(parseNumericInput(e.target.value))}
                         className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-black/30 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167]"
                       />
                     </div>
@@ -1010,7 +1021,7 @@ function EmployeeProfileDrawerDialog({
                     <div className="md:col-span-2 pt-2 border-t border-gray-200/60 dark:border-white/5 flex items-center justify-between text-xs">
                       <span className="text-gray-500">Gross Monthly Compensation:</span>
                       <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">
-                        PKR {(Number(basicSalary) + Number(allowances)).toLocaleString()}
+                        PKR {((Number(basicSalary) || 0) + (Number(allowances) || 0)).toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -1073,11 +1084,11 @@ function EmployeeProfileDrawerDialog({
                     Annual Leave Pool (Days)
                   </label>
                   <input
-                    type="number"
-                    min={0}
-                    max={60}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="14"
                     value={annualLeaveAllowance}
-                    onChange={(e) => setAnnualLeaveAllowance(Number(e.target.value))}
+                    onChange={(e) => setAnnualLeaveAllowance(parseNumericInput(e.target.value, 60))}
                     className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-black/30 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167]"
                   />
                 </div>
@@ -1087,11 +1098,11 @@ function EmployeeProfileDrawerDialog({
                     Sick Leave Pool (Days)
                   </label>
                   <input
-                    type="number"
-                    min={0}
-                    max={30}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="8"
                     value={sickLeaveAllowance}
-                    onChange={(e) => setSickLeaveAllowance(Number(e.target.value))}
+                    onChange={(e) => setSickLeaveAllowance(parseNumericInput(e.target.value, 30))}
                     className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-black/30 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167]"
                   />
                 </div>

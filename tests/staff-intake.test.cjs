@@ -38,3 +38,40 @@ test('CNIC validation requires exact 13 digits and matches standard format', () 
   assert.equal(validFormatted.replace(/\D/g, '').length, 13);
   assert.equal(cnicRegex.test(validFormatted), true);
 });
+
+function parseNumericInput(raw, max) {
+  const clean = raw.replace(/\D/g, "");
+  if (!clean) return "";
+  const noLeadingZero = clean.replace(/^0+(?=\d)/, "");
+  if (max !== undefined) {
+    const num = Number(noLeadingZero);
+    if (num > max) return String(max);
+  }
+  return noLeadingZero;
+}
+
+test('parseNumericInput cleans leading zeros and allows clearing to empty string', () => {
+  // Clearing input returns empty string, not sticky 0
+  assert.equal(parseNumericInput(''), '');
+
+  // Single zero remains zero
+  assert.equal(parseNumericInput('0'), '0');
+
+  // Double zero cleans to single zero
+  assert.equal(parseNumericInput('00'), '0');
+
+  // Typing after zero strips the leading zero instead of leaving '04' or '0454'
+  assert.equal(parseNumericInput('04'), '4');
+  assert.equal(parseNumericInput('0454'), '454');
+  assert.equal(parseNumericInput('0075000'), '75000');
+
+  // Normal numbers preserved
+  assert.equal(parseNumericInput('75000'), '75000');
+  assert.equal(parseNumericInput('15000'), '15000');
+
+  // Maximum caps for leave days
+  assert.equal(parseNumericInput('14', 60), '14');
+  assert.equal(parseNumericInput('75', 60), '60');
+  assert.equal(parseNumericInput('8', 30), '8');
+  assert.equal(parseNumericInput('35', 30), '30');
+});

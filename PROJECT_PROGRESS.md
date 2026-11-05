@@ -24,7 +24,11 @@ distinguishes between:
 - Added live digit progress indicator (`X / 13 digits`, switching to a green check when all 13 digits are fulfilled) and automated forward focus advancement to the Official Email field upon completion of 13 digits.
 - Established inline field-level error styling (red border, red focus ring, light-red tint, and alert messaging) across Stage 1 fields (`Full Name`, `CNIC ID`, `Official Email`, `Phone Number`, `Department`, and `Designation`).
 - Gated step transitions and drawer progression: users cannot proceed to Stage 2 ("Shift & Salary") or click future steps without resolving all Stage 1 requirements; clicking "Save & Continue" highlights invalid fields, scrolls to the first issue, and blocks stage change.
-- All unit tests passing (14/14 including `staff-intake.test.cjs` and `settings.test.cjs`) with clean TypeScript checks and production Next.js build.
+- Fixed numeric input editing across Stage 2 fields (`basicSalary`, `allowances`, `annualLeaveAllowance`, `sickLeaveAllowance`) in `components/staff/EmployeeProfileDrawer.tsx`. Replaced naive `Number(e.target.value)` casting with `parseNumericInput()`:
+  - Users can completely backspace/clear the input to an empty state without an obstinate sticky `0` reappearing.
+  - Strips leading zeros when typing new numbers (e.g. typing `454` renders cleanly as `454` instead of `0454`).
+  - Uses `type="text"` with `inputMode="numeric"` to maintain exact controlled string values and avoid native browser spin-button cursor jumps, while cleanly converting to numeric types upon payload submission.
+- All unit tests passing (15/15 including `staff-intake.test.cjs` and `settings.test.cjs`) with clean TypeScript checks and production Next.js build.
 
 ### Skeleton Loading States & Navigation Progress Feedback (2026-11-04)
 
