@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
@@ -61,6 +61,17 @@ const ROLES: { label: string; value: UserRole }[] = [
 ];
 const AVATAR_COLORS = ["#1B7167", "#2563EB", "#7C3AED", "#D97706", "#DC2626", "#059669"];
 
+export function formatCnic(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 13);
+  if (digits.length <= 5) {
+    return digits;
+  }
+  if (digits.length <= 12) {
+    return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  }
+  return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12, 13)}`;
+}
+
 function secureRandomInt(maxExclusive: number) {
   const range = 0x1_0000_0000;
   const limit = range - (range % maxExclusive);
@@ -117,6 +128,13 @@ function EmployeeProfileDrawerDialog({
   const [showQuickPin, setShowQuickPin] = useState(false);
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const fullNameInputRef = useRef<HTMLInputElement>(null);
+  const cnicInputRef = useRef<HTMLInputElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
 
   // Stage 1: Bio & Identity
   const [fullName, setFullName] = useState<string>(
@@ -125,8 +143,9 @@ function EmployeeProfileDrawerDialog({
   const [email, setEmail] = useState<string>(() => employee?.email || "");
   const [phone, setPhone] = useState<string>(() => employee?.phone || "+92 ");
   const [cnicNumber, setCnicNumber] = useState<string>(
-    () => employee?.cnicNumber || employee?.cnic || ""
+    () => formatCnic(employee?.cnicNumber || employee?.cnic || "")
   );
+
   const [joiningDate, setJoiningDate] = useState<string>(
     () => employee?.joiningDate || employee?.joining_date || new Date().toISOString().slice(0, 10)
   );
@@ -153,6 +172,47 @@ function EmployeeProfileDrawerDialog({
   const [status, setStatus] = useState<EmploymentStatus>(
     () => employee?.status || employee?.employment_status || "ACTIVE"
   );
+
+  const fullNameError = useMemo(() => {
+    if (!touched.fullName && !showValidationErrors) return "";
+    if (!fullName.trim()) return "Full name is required.";
+    if (fullName.trim().length < 2) return "Full name must be at least 2 characters.";
+    return "";
+  }, [fullName, touched.fullName, showValidationErrors]);
+
+  const cnicDigits = useMemo(() => cnicNumber.replace(/\D/g, ""), [cnicNumber]);
+
+  const cnicError = useMemo(() => {
+    if (!touched.cnicNumber && !showValidationErrors) return "";
+    if (!cnicDigits) return "CNIC ID is required.";
+    if (cnicDigits.length < 13) return `CNIC ID must be 13 digits (currently ${cnicDigits.length} of 13). Format: XXXXX-XXXXXXX-X`;
+    return "";
+  }, [cnicDigits, touched.cnicNumber, showValidationErrors]);
+
+  const emailError = useMemo(() => {
+    if (!touched.email && !showValidationErrors) return "";
+    if (!email.trim()) return "Official email is required.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return "Valid official email address is required.";
+    return "";
+  }, [email, touched.email, showValidationErrors]);
+
+  const phoneError = useMemo(() => {
+    if (!touched.phone && !showValidationErrors) return "";
+    if (!phone.trim() || phone.trim() === "+92") return "Phone number is required.";
+    return "";
+  }, [phone, touched.phone, showValidationErrors]);
+
+  const departmentError = useMemo(() => {
+    if (!showValidationErrors) return "";
+    if (!departmentId) return "Department selection is required.";
+    return "";
+  }, [departmentId, showValidationErrors]);
+
+  const designationError = useMemo(() => {
+    if (!showValidationErrors) return "";
+    if (!designationId || !designation.trim()) return "Designation selection is required.";
+    return "";
+  }, [designationId, designation, showValidationErrors]);
 
   // Stage 2: Shift, Bank & Compensation
   const [shiftId, setShiftId] = useState<string>(
@@ -315,21 +375,76 @@ function EmployeeProfileDrawerDialog({
     reader.readAsDataURL(file);
   };
 
+  const handleCnicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    const formatted = formatCnic(raw);
+    const prevDigitsCount = cnicNumber.replace(/\D/g, "").length;
+    setCnicNumber(formatted);
+    if (formError && formError.toLowerCase().includes("cnic")) {
+      setFormError("");
+    }
+    const newDigitsCount = formatted.replace(/\D/g, "").length;
+    // Auto-advance to the official email input when 13 digits are reached typing forward
+    if (newDigitsCount === 13 && prevDigitsCount < 13) {
+      emailInputRef.current?.focus();
+    }
+  };
+
+  const handleCnicKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace") {
+      const target = e.currentTarget;
+      const { selectionStart, selectionEnd, value } = target;
+      if (selectionStart !== null && selectionStart === selectionEnd) {
+        if (selectionStart === 6 || selectionStart === 14) {
+          e.preventDefault();
+          const nextRaw = value.slice(0, selectionStart - 2) + value.slice(selectionStart);
+          const formatted = formatCnic(nextRaw);
+          setCnicNumber(formatted);
+          setTimeout(() => {
+            const newPos = Math.max(0, selectionStart - 2);
+            target.setSelectionRange(newPos, newPos);
+          }, 0);
+        }
+      }
+    }
+  };
+
   const validateStage1 = () => {
-    if (!fullName.trim()) {
-      setFormError("Legal full name is required.");
+    setShowValidationErrors(true);
+    setTouched((prev) => ({
+      ...prev,
+      fullName: true,
+      cnicNumber: true,
+      email: true,
+      phone: true,
+      department: true,
+      designation: true,
+    }));
+
+    if (!fullName.trim() || fullName.trim().length < 2) {
+      setFormError("Full name is required (minimum 2 characters).");
+      fullNameInputRef.current?.focus();
       return false;
     }
-    if (!email.trim() || !email.includes("@")) {
+    const digits = cnicNumber.replace(/\D/g, "");
+    if (!digits) {
+      setFormError("CNIC ID is required.");
+      cnicInputRef.current?.focus();
+      return false;
+    }
+    if (digits.length !== 13) {
+      setFormError(`CNIC ID must be exactly 13 digits (entered ${digits.length} of 13). Standard format: 00000-0000000-0.`);
+      cnicInputRef.current?.focus();
+      return false;
+    }
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setFormError("Valid official email address is required.");
+      emailInputRef.current?.focus();
       return false;
     }
-    if (!phone.trim()) {
-      setFormError("Contact telephone is required.");
-      return false;
-    }
-    if (!cnicNumber.trim()) {
-      setFormError("Valid National Identity Card (CNIC) number is required.");
+    if (!phone.trim() || phone.trim() === "+92") {
+      setFormError("Contact telephone number is required.");
+      phoneInputRef.current?.focus();
       return false;
     }
     if (!departmentId) {
@@ -359,6 +474,14 @@ function EmployeeProfileDrawerDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (stage === 1) {
+      if (validateStage1()) setStage(2);
+      return;
+    }
+    if (stage === 2) {
+      if (validateStage2()) setStage(3);
+      return;
+    }
     if (!validateStage1() || !validateStage2()) return;
 
     setFormError("");
@@ -551,62 +674,158 @@ function EmployeeProfileDrawerDialog({
               {/* Full Name & CNIC */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                    Full Legal Name *
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                      Full Name *
+                    </label>
+                    {fullName.trim().length >= 2 && (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
+                        <Check className="w-3 h-3" /> Valid
+                      </span>
+                    )}
+                  </div>
                   <input
+                    ref={fullNameInputRef}
                     type="text"
                     required
                     placeholder="e.g. Fatima Noor"
                     value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-black/30 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167]"
+                    onChange={(e) => {
+                      setFullName(e.target.value);
+                      if (formError && formError.toLowerCase().includes("name")) setFormError("");
+                    }}
+                    onBlur={() => setTouched((prev) => ({ ...prev, fullName: true }))}
+                    className={`w-full px-3 py-2 text-xs rounded-xl border transition-all ${
+                      fullNameError
+                        ? "border-rose-400 dark:border-rose-500 bg-rose-50/40 dark:bg-rose-950/20 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-rose-500"
+                        : "border-gray-300 dark:border-white/10 bg-white dark:bg-black/30 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167]"
+                    }`}
                   />
+                  {fullNameError && (
+                    <p className="text-[10px] text-rose-600 dark:text-rose-400 flex items-center gap-1 font-medium mt-0.5">
+                      <AlertCircle className="w-3 h-3 shrink-0" />
+                      {fullNameError}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                    CNIC / National ID *
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                      CNIC ID *
+                    </label>
+                    <span className="text-[10px] font-mono font-medium text-gray-400">
+                      {cnicDigits.length === 13 ? (
+                        <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-0.5">
+                          <Check className="w-3 h-3" /> 13 / 13 Digits
+                        </span>
+                      ) : (
+                        <span>{cnicDigits.length} / 13 digits</span>
+                      )}
+                    </span>
+                  </div>
                   <input
+                    ref={cnicInputRef}
                     type="text"
+                    inputMode="numeric"
+                    maxLength={15}
                     required
                     placeholder="35201-1234567-1"
                     value={cnicNumber}
-                    onChange={(e) => setCnicNumber(e.target.value)}
-                    className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-black/30 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167]"
+                    onChange={handleCnicChange}
+                    onKeyDown={handleCnicKeyDown}
+                    onBlur={() => setTouched((prev) => ({ ...prev, cnicNumber: true }))}
+                    className={`w-full px-3 py-2 text-xs font-mono rounded-xl border transition-all ${
+                      cnicError
+                        ? "border-rose-400 dark:border-rose-500 bg-rose-50/40 dark:bg-rose-950/20 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-rose-500"
+                        : "border-gray-300 dark:border-white/10 bg-white dark:bg-black/30 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167]"
+                    }`}
                   />
+                  {cnicError ? (
+                    <p className="text-[10px] text-rose-600 dark:text-rose-400 flex items-center gap-1 font-medium mt-0.5">
+                      <AlertCircle className="w-3 h-3 shrink-0" />
+                      {cnicError}
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-gray-400">
+                      Auto-formatted 13-digit National ID (XXXXX-XXXXXXX-X)
+                    </p>
+                  )}
                 </div>
               </div>
 
               {/* Email & Phone */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                    Official Email *
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                      Official Email *
+                    </label>
+                    {email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
+                        <Check className="w-3 h-3" /> Valid
+                      </span>
+                    )}
+                  </div>
                   <input
+                    ref={emailInputRef}
                     type="email"
                     required
                     placeholder="name@worldclass.com"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-black/30 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167]"
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (formError && formError.toLowerCase().includes("email")) setFormError("");
+                    }}
+                    onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
+                    className={`w-full px-3 py-2 text-xs rounded-xl border transition-all ${
+                      emailError
+                        ? "border-rose-400 dark:border-rose-500 bg-rose-50/40 dark:bg-rose-950/20 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-rose-500"
+                        : "border-gray-300 dark:border-white/10 bg-white dark:bg-black/30 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167]"
+                    }`}
                   />
+                  {emailError && (
+                    <p className="text-[10px] text-rose-600 dark:text-rose-400 flex items-center gap-1 font-medium mt-0.5">
+                      <AlertCircle className="w-3 h-3 shrink-0" />
+                      {emailError}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                    Phone Number *
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                      Phone Number *
+                    </label>
+                    {phone.trim() && phone.trim() !== "+92" && phone.replace(/\D/g, "").length >= 10 && (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
+                        <Check className="w-3 h-3" /> Valid
+                      </span>
+                    )}
+                  </div>
                   <input
+                    ref={phoneInputRef}
                     type="tel"
                     required
                     placeholder="+92 300 1234567"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-black/30 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167]"
+                    onChange={(e) => {
+                      setPhone(e.target.value);
+                      if (formError && formError.toLowerCase().includes("phone")) setFormError("");
+                    }}
+                    onBlur={() => setTouched((prev) => ({ ...prev, phone: true }))}
+                    className={`w-full px-3 py-2 text-xs font-mono rounded-xl border transition-all ${
+                      phoneError
+                        ? "border-rose-400 dark:border-rose-500 bg-rose-50/40 dark:bg-rose-950/20 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-rose-500"
+                        : "border-gray-300 dark:border-white/10 bg-white dark:bg-black/30 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167]"
+                    }`}
                   />
+                  {phoneError && (
+                    <p className="text-[10px] text-rose-600 dark:text-rose-400 flex items-center gap-1 font-medium mt-0.5">
+                      <AlertCircle className="w-3 h-3 shrink-0" />
+                      {phoneError}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -625,9 +844,14 @@ function EmployeeProfileDrawerDialog({
                       setDepartment((selected?.code || selected?.name || "") as Department);
                       setDesignationId("");
                       setDesignation("");
+                      if (formError && formError.toLowerCase().includes("department")) setFormError("");
                     }}
                     disabled={departmentOptions.length === 0}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-[#121824] text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167] disabled:opacity-60"
+                    className={`w-full px-3 py-2 text-xs rounded-xl border transition-all ${
+                      departmentError
+                        ? "border-rose-400 dark:border-rose-500 bg-rose-50/40 dark:bg-rose-950/20 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-rose-500"
+                        : "border-gray-300 dark:border-white/10 bg-white dark:bg-[#121824] text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167] disabled:opacity-60"
+                    }`}
                   >
                     {departmentOptions.length === 0 && <option value="">Loading departments...</option>}
                     {departmentOptions.map((option) => (
@@ -636,6 +860,12 @@ function EmployeeProfileDrawerDialog({
                       </option>
                     ))}
                   </select>
+                  {departmentError && (
+                    <p className="text-[10px] text-rose-600 dark:text-rose-400 flex items-center gap-1 font-medium mt-0.5">
+                      <AlertCircle className="w-3 h-3 shrink-0" />
+                      {departmentError}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -650,9 +880,14 @@ function EmployeeProfileDrawerDialog({
                       const selected = designationOptions.find((option) => option.id === nextId);
                       setDesignationId(nextId);
                       setDesignation(selected?.title || "");
+                      if (formError && formError.toLowerCase().includes("designation")) setFormError("");
                     }}
                     disabled={!departmentId || designationOptions.length === 0}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-[#121824] text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167] disabled:opacity-60"
+                    className={`w-full px-3 py-2 text-xs rounded-xl border transition-all ${
+                      designationError
+                        ? "border-rose-400 dark:border-rose-500 bg-rose-50/40 dark:bg-rose-950/20 text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-rose-500"
+                        : "border-gray-300 dark:border-white/10 bg-white dark:bg-[#121824] text-gray-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#1B7167] disabled:opacity-60"
+                    }`}
                   >
                     {designationOptions.length === 0 && <option value="">Loading designations...</option>}
                     {designationOptions.map((option) => (
@@ -661,6 +896,12 @@ function EmployeeProfileDrawerDialog({
                       </option>
                     ))}
                   </select>
+                  {designationError && (
+                    <p className="text-[10px] text-rose-600 dark:text-rose-400 flex items-center gap-1 font-medium mt-0.5">
+                      <AlertCircle className="w-3 h-3 shrink-0" />
+                      {designationError}
+                    </p>
+                  )}
                 </div>
               </div>
 

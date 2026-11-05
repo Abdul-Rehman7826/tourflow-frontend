@@ -15,6 +15,17 @@ distinguishes between:
 - prototype behavior that is browser-local and still requires production backend work.
 
 ## Current Repository Snapshot
+### Staff Intake Onboarding & Formatted CNIC Masking (2026-11-06)
+
+- Refactored field labeling and identity requirements in the Staff Intake & Onboarding drawer (`components/staff/EmployeeProfileDrawer.tsx`):
+  - Changed `Full Legal Name *` to `Full Name *` with clear inline feedback and minimum 2-character validation.
+  - Changed `CNIC / National ID *` to `CNIC ID *` with strict 13-digit Pakistani format enforcement.
+- Implemented real-time dynamic input masking for CNIC (`XXXXX-XXXXXXX-X`), formatting digits into 5-7-1 blocks as typed or pasted, with seamless Backspace cursor handling across hyphens.
+- Added live digit progress indicator (`X / 13 digits`, switching to a green check when all 13 digits are fulfilled) and automated forward focus advancement to the Official Email field upon completion of 13 digits.
+- Established inline field-level error styling (red border, red focus ring, light-red tint, and alert messaging) across Stage 1 fields (`Full Name`, `CNIC ID`, `Official Email`, `Phone Number`, `Department`, and `Designation`).
+- Gated step transitions and drawer progression: users cannot proceed to Stage 2 ("Shift & Salary") or click future steps without resolving all Stage 1 requirements; clicking "Save & Continue" highlights invalid fields, scrolls to the first issue, and blocks stage change.
+- All unit tests passing (14/14 including `staff-intake.test.cjs` and `settings.test.cjs`) with clean TypeScript checks and production Next.js build.
+
 ### Skeleton Loading States & Navigation Progress Feedback (2026-11-04)
 
 - Integrated real-time route navigation feedback via `NavigationProgressBar` (`components/layout/NavigationProgressBar.tsx`) mounted in `app/layout.tsx`. On slower networks or high-latency transitions, clicking any route or sidebar link immediately illuminates a glowing 3px progress bar in `--agency-action` / `--agency-accent` (`#1B7167` / `#2DD4BF`), completely removing UI freeze sensations.
