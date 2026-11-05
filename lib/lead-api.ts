@@ -28,19 +28,28 @@ export interface ApiLeadResponse {
   phone: string;
   email?: string;
   source?: string;
+  service_type?: string;
   interest_type?: string;
   interestType?: string;
+  package_interest?: string;
   destination_interest?: string;
   destinationInterest?: string;
+  pax_count?: number;
   group_size?: number;
   groupSize?: number;
   status: string;
+  priority?: string;
   notes?: string;
   interactions?: ApiInteractionResponse[];
+  scheduled_callback?: string;
   follow_up_date?: string;
   followUpDate?: string;
+  assigned_employee_id?: string;
+  assigned_employee_name?: string;
+  assigned_employee_code?: string;
   assigned_to?: string;
   assignedTo?: string;
+  budget_target?: number;
   budget?: number;
   created_at?: string;
   createdAt?: string;
@@ -61,7 +70,7 @@ export function backendToFrontendLead(raw: ApiLeadResponse): Lead {
     ? rawStatus
     : "NEW";
 
-  const rawInterest = (raw.interest_type || raw.interestType || "GROUP_TOUR").toUpperCase() as LeadInterestType;
+  const rawInterest = (raw.service_type || raw.interest_type || raw.interestType || "GROUP_TOUR").toUpperCase() as LeadInterestType;
   const validInterest: LeadInterestType = ["GROUP_TOUR", "VISA", "UMRAH", "CUSTOM_PACKAGE"].includes(rawInterest)
     ? rawInterest
     : "GROUP_TOUR";
@@ -85,14 +94,16 @@ export function backendToFrontendLead(raw: ApiLeadResponse): Lead {
     email: raw.email || "",
     source: (raw.source as LeadSource) || "Walk-in",
     interestType: validInterest,
-    destinationInterest: raw.destination_interest || raw.destinationInterest || "",
-    groupSize: raw.group_size ?? raw.groupSize ?? 1,
+    destinationInterest: raw.package_interest || raw.destination_interest || raw.destinationInterest || "",
+    groupSize: raw.pax_count ?? raw.group_size ?? raw.groupSize ?? 1,
     status: validStatus,
     notes: raw.notes || "",
     interactions,
-    followUpDate: raw.follow_up_date || raw.followUpDate || new Date().toISOString().split("T")[0],
-    assignedTo: raw.assigned_to || raw.assignedTo || "Unassigned",
-    budget: raw.budget ?? 0,
+    followUpDate: raw.scheduled_callback ? raw.scheduled_callback.split("T")[0].split(" ")[0] : (raw.follow_up_date || raw.followUpDate || new Date().toISOString().split("T")[0]),
+    assignedTo: raw.assigned_employee_name || raw.assigned_to || raw.assignedTo || "Unassigned",
+    assignedEmployeeId: raw.assigned_employee_id,
+    assigned_employee_id: raw.assigned_employee_id,
+    budget: raw.budget_target !== undefined && raw.budget_target !== null ? Number(raw.budget_target) : (raw.budget ?? 0),
     createdAt: raw.created_at || raw.createdAt || new Date().toISOString(),
     clientId: raw.client_id || raw.clientId,
     lossReason: raw.loss_reason || raw.lossReason,
@@ -103,21 +114,42 @@ export function backendToFrontendLead(raw: ApiLeadResponse): Lead {
 /**
  * Transforms frontend Lead model or creation data to backend payload (snake_case)
  */
-export function frontendToBackendLead(lead: Partial<Lead>): Record<string, unknown> {
+export function frontendToBackendLead(lead: Partial<Lead> & { notes?: string; assignedEmployeeId?: string; assigned_employee_id?: string }): Record<string, unknown> {
   const payload: Record<string, unknown> = {};
 
   if (lead.fullName !== undefined) payload.full_name = lead.fullName;
   if (lead.phone !== undefined) payload.phone = lead.phone;
   if (lead.email !== undefined) payload.email = lead.email;
   if (lead.source !== undefined) payload.source = lead.source;
-  if (lead.interestType !== undefined) payload.interest_type = lead.interestType;
-  if (lead.destinationInterest !== undefined) payload.destination_interest = lead.destinationInterest;
-  if (lead.groupSize !== undefined) payload.group_size = lead.groupSize;
+  if (lead.interestType !== undefined) {
+    payload.service_type = lead.interestType;
+    payload.interest_type = lead.interestType;
+  }
+  if (lead.destinationInterest !== undefined) {
+    payload.package_interest = lead.destinationInterest;
+    payload.destination_interest = lead.destinationInterest;
+  }
+  if (lead.groupSize !== undefined) {
+    payload.pax_count = lead.groupSize;
+    payload.group_size = lead.groupSize;
+  }
   if (lead.status !== undefined) payload.status = lead.status;
   if (lead.notes !== undefined) payload.notes = lead.notes;
-  if (lead.followUpDate !== undefined) payload.follow_up_date = lead.followUpDate;
-  if (lead.assignedTo !== undefined) payload.assigned_to = lead.assignedTo;
-  if (lead.budget !== undefined) payload.budget = lead.budget;
+  if (lead.followUpDate !== undefined) {
+    payload.scheduled_callback = lead.followUpDate;
+    payload.follow_up_date = lead.followUpDate;
+  }
+  if (lead.assignedTo !== undefined) {
+    payload.assigned_to = lead.assignedTo;
+  }
+  const employeeId = lead.assignedEmployeeId || lead.assigned_employee_id;
+  if (employeeId !== undefined && employeeId !== "") {
+    payload.assigned_employee_id = employeeId;
+  }
+  if (lead.budget !== undefined) {
+    payload.budget_target = lead.budget;
+    payload.budget = lead.budget;
+  }
   if (lead.tenantId !== undefined) payload.tenant_id = lead.tenantId;
   if (lead.clientId !== undefined) payload.client_id = lead.clientId;
   if (lead.lossReason !== undefined) payload.loss_reason = lead.lossReason;
@@ -155,7 +187,7 @@ export async function fetchLeadsApi(tenantId?: string): Promise<Lead[]> {
 /**
  * Creates a new lead via POST /leads
  */
-export async function createLeadApi(leadData: Omit<Lead, "id" | "createdAt" | "interactions"> & { notes?: string }): Promise<Lead> {
+export async function createLeadApi(leadData: Omit<Lead, "id" | "createdAt" | "interactions"> & { notes?: string; assignedEmployeeId?: string }): Promise<Lead> {
   const backendPayload = frontendToBackendLead(leadData);
   const raw = await apiClient.post<ApiLeadResponse>("/leads", backendPayload);
   return backendToFrontendLead(raw);
@@ -180,45 +212,42 @@ export async function updateLeadApi(id: string, updates: Partial<Lead>): Promise
 }
 
 /**
- * Deletes a lead via DELETE /leads/{id}
+ * Logs an interaction on an existing lead via POST /leads/{id}/interactions
  */
-export async function deleteLeadApi(id: string): Promise<void> {
-  await apiClient.delete(`/leads/${id}`);
+export async function addLeadInteractionApi(leadId: string, payload: {
+  note: string;
+  author?: string;
+  channel?: "WhatsApp" | "Walk-in" | "Phone Call" | "Email" | "Office Visit";
+  scheduled_callback?: string;
+}): Promise<Interaction> {
+  const raw = await apiClient.post<ApiInteractionResponse>(`/leads/${leadId}/interactions`, {
+    note: payload.note,
+    author: payload.author || "Front Desk Rep",
+    channel: payload.channel || "Phone Call",
+    scheduled_callback: payload.scheduled_callback,
+  });
+
+  return {
+    id: String(raw.id || `int-${Date.now()}`),
+    leadId: String(raw.lead_id || raw.leadId || leadId),
+    note: raw.note,
+    author: raw.author || payload.author || "Front Desk Rep",
+    channel: (raw.channel as Interaction["channel"]) || payload.channel || "Phone Call",
+    createdAt: raw.created_at || raw.createdAt || new Date().toISOString(),
+  };
 }
 
 /**
- * Adds an interaction note to a lead via POST /leads/{id}/interactions
+ * Deletes a lead via DELETE /leads/{id}
  */
-export async function addInteractionApi(
-  leadId: string,
-  interaction: Omit<Interaction, "id" | "leadId" | "createdAt">
-): Promise<Interaction> {
-  const payload = {
-    note: interaction.note,
-    author: interaction.author,
-    channel: interaction.channel,
-  };
+export const addInteractionApi = addLeadInteractionApi;
 
+export async function deleteLeadApi(id: string): Promise<boolean> {
   try {
-    const raw = await apiClient.post<ApiInteractionResponse>(`/leads/${leadId}/interactions`, payload);
-    return {
-      id: String(raw.id || `int-${Date.now()}`),
-      leadId,
-      note: raw.note || interaction.note,
-      author: raw.author || interaction.author,
-      channel: (raw.channel as Interaction["channel"]) || interaction.channel,
-      createdAt: raw.created_at || raw.createdAt || new Date().toISOString(),
-    };
-  } catch {
-    // If endpoint isn't separate, fallback to updating lead object directly
-    const newInt: Interaction = {
-      id: `int-${Date.now()}`,
-      leadId,
-      note: interaction.note,
-      author: interaction.author,
-      channel: interaction.channel,
-      createdAt: new Date().toISOString(),
-    };
-    return newInt;
+    await apiClient.delete(`/leads/${id}`);
+    return true;
+  } catch (err) {
+    console.error(`Failed to delete lead ${id}:`, err);
+    return false;
   }
 }

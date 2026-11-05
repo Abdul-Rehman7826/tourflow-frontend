@@ -175,6 +175,7 @@ export interface NewLeadInput {
   notes: string;
   followUpDate: string;
   assignedTo?: string;
+  assignedEmployeeId?: string;
   initialChannel?:
     "WhatsApp" | "Walk-in" | "Phone Call" | "Email" | "Office Visit";
 }
@@ -2070,6 +2071,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         input.followUpDate ||
         new Date(Date.now() + 86400000).toISOString().split("T")[0],
       assignedTo: input.assignedTo || "Front Desk Rep",
+      assignedEmployeeId: input.assignedEmployeeId,
       createdAt: nowIso,
       interactions: initialInteraction ? [initialInteraction] : [],
     };

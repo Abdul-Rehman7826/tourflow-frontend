@@ -4,7 +4,6 @@ import { useAgencySettings } from "@/context/ThemeContext";
 import React, { useEffect, useState, useMemo } from "react";
 import { useData } from "@/context/DataContext";
 import { apiClient } from "@/lib/api-client";
-import { createLeadApi } from "@/lib/crm-api";
 import { LeadInterestType, LeadSource } from "@/types/erp";
 import {
   UserPlus,
@@ -225,6 +224,9 @@ export function NewLeadModal({ isOpen, onClose, onSuccess }: NewLeadModalProps) 
     const formattedPhone = `${countryCode} ${phone.trim()}`;
     const finalPax = Math.max(1, parseInt(groupSize, 10) || 1);
     const parsedOffer = offerAmount && !isNaN(Number(offerAmount)) ? Number(offerAmount) : undefined;
+    const selectedRep = frontDeskReps.find(
+      (r) => r.full_name === assignedTo || r.id === assignedTo
+    );
 
     try {
       addLead({
@@ -238,23 +240,10 @@ export function NewLeadModal({ isOpen, onClose, onSuccess }: NewLeadModalProps) 
         budget: parsedOffer,
         notes: notes.trim() || `Inquiry intake via ${source}`,
         followUpDate: followUpDate || new Date(Date.now() + 86400000).toISOString().split("T")[0],
-        assignedTo,
+        assignedTo: selectedRep?.full_name || assignedTo,
+        assignedEmployeeId: selectedRep?.id,
         initialChannel: source === "WhatsApp" ? "WhatsApp" : source === "Walk-in" ? "Walk-in" : "Phone Call",
       });
-
-      void createLeadApi({
-        full_name: fullName.trim(),
-        country_code: countryCode,
-        phone: phone.trim(),
-        email: email.trim() || undefined,
-        source,
-        service_type: interestType,
-        package_interest: destinationInterest.trim() || undefined,
-        pax_count: finalPax,
-        budget_target: parsedOffer,
-        notes: notes.trim() || `Inquiry intake via ${source}`,
-        scheduled_callback: followUpDate,
-      }).catch(() => {});
     } catch (err) {
       setSubmitError((err as Error).message);
       return;

@@ -15,6 +15,14 @@ distinguishes between:
 - prototype behavior that is browser-local and still requires production backend work.
 
 ## Current Repository Snapshot
+### Lead Intake Duplicate Elimination, Assignee Mapping & Queue Table Checkbox Fix (2026-11-06)
+
+- Diagnosed and resolved duplicate lead insertion and queue misplacement:
+  - **Duplicate Prevention**: Identified and eliminated redundant call to `createLeadApi()` in `components/leads/NewLeadModal.tsx`. The modal previously invoked `addLead()` (which synchronizes with the backend via `createLeadApi` in `DataContext.tsx`) AND called standalone `void createLeadApi(...)` simultaneously, causing two distinct rows in MySQL for each submission (one with formatted international phone `+92 XXXXXXXXXXX` and one with raw `XXXXXXXXXXX`). Removed the duplicate direct call so exactly one HTTP POST is dispatched per submission.
+  - **Staff Assignment Sync**: Mapped `selectedRep` from `frontDeskReps` to attach both `assignedTo` (staff full name) and `assignedEmployeeId` (UUID) to `addLead`. Updated `lib/lead-api.ts` to map `assigned_employee_id` in outbound payloads and correctly resolve `raw.assigned_employee_name` to `lead.assignedTo` when fetching leads from the backend. Assigned leads now properly transition to the `Active Sales Queue` instead of landing in `Unassigned Leads`.
+  - **Queue Table Selection Fix**: Resolved checkbox toggle failure in `components/leads/UnassignedQueueTable.tsx` and `components/leads/ActiveSalesQueueTable.tsx`. The table cell `<td>` had an `onClick={() => onToggleSelect(lead.id)}` while the inner `<input type="checkbox">` had an `onChange`. Clicking the checkbox caused the click event to bubble to the `<td>`, triggering `onToggleSelect` twice consecutively and immediately reversing the checked state. Added `onClick={(e) => e.stopPropagation()}` to the checkbox element to prevent bubbling, and hardened `isAllSelected` check across both queue tables.
+  - **Audit & Verification**: All 30 unit tests passing across `tests/lead-intake.test.cjs`, `tests/leads.test.cjs`, `tests/staff-intake.test.cjs`, and `tests/settings.test.cjs`. `tsc --noEmit` and production Next.js build pass with 0 errors.
+
 ### Lead Intake Form Streamlining: Category Offer, Direct Destination & Pax Stepper (2026-11-06)
 
 - Streamlined the Front Desk Lead Intake modal (`components/leads/NewLeadModal.tsx`):

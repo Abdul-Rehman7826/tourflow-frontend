@@ -64,6 +64,8 @@ export interface Lead {
   interactions: Interaction[]; // Detailed audit log
   followUpDate: string; // ISO date string (YYYY-MM-DD)
   assignedTo: string; // Staff member name
+  assignedEmployeeId?: string;
+  assigned_employee_id?: string;
   budget?: number;
   createdAt: string; // ISO date string
 }

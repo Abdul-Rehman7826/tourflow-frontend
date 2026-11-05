@@ -36,7 +36,7 @@ export function ActiveSalesQueueTable({
   onOpenConvertModal,
 }: ActiveSalesQueueTableProps) {
   const { formatMoney } = useAgencySettings();
-  const isAllSelected = leads.length > 0 && selectedIds.length === leads.length;
+  const isAllSelected = leads.length > 0 && leads.every((l) => selectedIds.includes(l.id));
 
   const getStageBadge = (status: LeadStatus) => {
     switch (status) {
@@ -115,6 +115,7 @@ export function ActiveSalesQueueTable({
                   <input
                     type="checkbox"
                     checked={isSelected}
+                    onClick={(e) => e.stopPropagation()}
                     onChange={() => onToggleSelect(lead.id)}
                     className="w-4 h-4 rounded border-gray-300 dark:border-gray-700 text-[#1B7167] focus:ring-[#1B7167] cursor-pointer"
                   />
