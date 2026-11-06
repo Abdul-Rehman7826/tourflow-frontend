@@ -26,6 +26,7 @@ import { LeadInteractionDrawer } from "@/components/leads/LeadInteractionDrawer"
 import { ConvertLeadModal } from "@/components/leads/ConvertLeadModal";
 import { LostReasonDialog } from "@/components/leads/LostReasonDialog";
 import { NewLeadModal } from "@/components/leads/NewLeadModal";
+import { NewLeadIntake } from "@/components/leads/NewLeadIntake";
 import { LeadImportWorkspace } from "@/components/leads/LeadImportWorkspace";
 import { DuplicateQueue } from "@/components/leads/DuplicateQueue";
 import { PaymentVerificationQueue } from "@/components/invoices/PaymentRecoveryActions";
@@ -742,6 +743,7 @@ function LeadsWorkspace() {
             }}
             onDeleteSelected={isAgencyAdmin ? () => setIsBulkDeleteOpen(true) : undefined}
             activeReps={activeReps}
+            isAdmin={isAdmin}
           />
         </>
       )}
@@ -771,14 +773,27 @@ function LeadsWorkspace() {
       )}
 
       {/* New Lead Intake Modal */}
-      <NewLeadModal
-        isOpen={isNewLeadModalOpen}
-        onClose={() => setIsNewLeadModalOpen(false)}
-        onSuccess={(leadName) => {
-          setIsNewLeadModalOpen(false);
-          showToast(`New traveler lead "${leadName || "Inquiry"}" created successfully.`);
-        }}
-      />
+      {isNewLeadModalOpen && (
+        isAdmin ? (
+          <NewLeadModal
+            isOpen={isNewLeadModalOpen}
+            onClose={() => setIsNewLeadModalOpen(false)}
+            onSuccess={(leadName) => {
+              setIsNewLeadModalOpen(false);
+              showToast(`New traveler lead "${leadName || "Inquiry"}" created successfully.`);
+            }}
+          />
+        ) : (
+          <NewLeadIntake
+            isOpen={isNewLeadModalOpen}
+            onClose={() => setIsNewLeadModalOpen(false)}
+            onSuccess={(leadName) => {
+              setIsNewLeadModalOpen(false);
+              showToast(`New inquiry "${leadName || "Lead"}" registered to your sales queue.`);
+            }}
+          />
+        )
+      )}
 
       {/* Edit Lead Modal */}
       {selectedLeadForEdit && (

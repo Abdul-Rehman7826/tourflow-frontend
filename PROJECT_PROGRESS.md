@@ -15,6 +15,27 @@ distinguishes between:
 - prototype behavior that is browser-local and still requires production backend work.
 
 ## Current Repository Snapshot
+### Front Desk Dedicated Lead Intake with Locked Self-Assignment (2026-11-06)
+
+- **Dedicated Front Desk Intake Workflow (`NewLeadIntake.tsx`) with Irrevocable Self-Assignment**:
+  - Built `components/leads/NewLeadIntake.tsx` specifically tailored for Front Desk representatives.
+  - Replaced the selectable representative `<select>` dropdown with a locked, high-contrast staff identity card displaying the authenticated staff member's initials avatar, full name (`staffDisplayName`), role badge (`Front Desk`), status pill (`Assigned to You (Personal Queue)`), and a green locked badge.
+  - Front Desk representatives cannot re-assign or delegate inquiries to any other staff member at intake time.
+  - Binds `assignedTo` directly to the authenticated staff member and attaches their linked employee ID (`currentEmployee.id`).
+  - Automatically routes newly created inquiries straight into their personal Active Sales Queue.
+- **Agency Admin vs. Front Desk Intake Separation**:
+  - In `app/(dashboard)/leads/page.tsx`, conditionally rendered `NewLeadModal` (for `AGENCY_ADMIN`, `SUPER_ADMIN`, `TOUR_MANAGER`) and `NewLeadIntake` (for Front Desk / non-manager staff).
+  - In `NewLeadModal.tsx`, relabeled header to **"New Lead Intake (Managerial Allocation)"** and dropdown to **"Assigned Representative *"**, adding `-- Leave Unassigned (Unassigned Queue) --` so Agency Admins can delegate inquiries to any active team member or route them to the unassigned queue.
+- **Backend Role-Based Self-Assignment Lock**:
+  - In `backend/src/Crm/CrmService.php` (`createLead`), enforced that if `$principal['user']['role']` is not in `MANAGERS`, `$assignedEmployeeId` is strictly forced to `$actorEmp['id']`, ignoring any foreign assignee in the payload and preventing network/client-side bypass.
+- **Unassigned Leads & Bulk Allocation Protection**:
+  - In `components/leads/UnassignedQueueTable.tsx`, gated the `Delegate...` popover button to `isAdmin`. Front Desk staff see only the clean, prominent `Assign to Me` button and cannot delegate unassigned leads.
+  - In `components/leads/BulkActionDock.tsx`, passed `isAdmin` and gated the bulk `Assign Rep...` dropdown so non-admin staff cannot reassign leads in bulk.
+- **Verification & Quality Assurance**:
+  - All 30 unit tests pass across `tests/lead-intake.test.cjs`, `tests/leads.test.cjs`, `tests/staff-intake.test.cjs`, and `tests/settings.test.cjs`.
+  - TypeScript compiler (`tsc --noEmit`) passes with 0 errors.
+  - `git diff --check` passes with 0 whitespace issues across frontend and backend repositories.
+  - Full production Next.js build (`npm run build -- --webpack`) succeeds across all 31 application routes.
 ### Staff Identity Resolution & Front Desk Intake Auto-Assignee (2026-11-06)
 
 - **Staff Information & Identity Resolution**:

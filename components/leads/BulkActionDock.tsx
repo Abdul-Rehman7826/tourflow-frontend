@@ -18,6 +18,7 @@ interface BulkActionDockProps {
   onPromptMarkLost: () => void;
   onDeleteSelected?: () => void;
   activeReps: string[];
+  isAdmin?: boolean;
 }
 
 export function BulkActionDock({
@@ -27,6 +28,7 @@ export function BulkActionDock({
   onPromptMarkLost,
   onDeleteSelected,
   activeReps,
+  isAdmin = false,
 }: BulkActionDockProps) {
   if (selectedCount === 0) return null;
 
@@ -49,29 +51,31 @@ export function BulkActionDock({
           </button>
         </div>
 
-        {/* Action: Bulk Assign Rep */}
-        <div className="flex items-center gap-1.5">
-          <UserCheck className="w-3.5 h-3.5 text-teal-400 shrink-0" />
-          <select
-            value=""
-            onChange={(e) => {
-              if (e.target.value) {
-                onApplyChange({ assignedTo: e.target.value });
-              }
-            }}
-            className="bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#1B7167] transition-colors cursor-pointer"
-          >
-            <option value="" className="text-gray-900 bg-white">Assign Rep...</option>
-            <option value="Unassigned" className="text-amber-700 bg-amber-50 font-semibold">
-              -- Move to Unassigned --
-            </option>
-            {activeReps.map((rep) => (
-              <option key={rep} value={rep} className="text-gray-900 bg-white">
-                {rep}
+        {/* Action: Bulk Assign Rep (Managerial Only) */}
+        {isAdmin && (
+          <div className="flex items-center gap-1.5">
+            <UserCheck className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+            <select
+              value=""
+              onChange={(e) => {
+                if (e.target.value) {
+                  onApplyChange({ assignedTo: e.target.value });
+                }
+              }}
+              className="bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#1B7167] transition-colors cursor-pointer"
+            >
+              <option value="" className="text-gray-900 bg-white">Assign Rep...</option>
+              <option value="Unassigned" className="text-amber-700 bg-amber-50 font-semibold">
+                -- Move to Unassigned --
               </option>
-            ))}
-          </select>
-        </div>
+              {activeReps.map((rep) => (
+                <option key={rep} value={rep} className="text-gray-900 bg-white">
+                  {rep}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Action: Bulk Status Change */}
         <div className="flex items-center gap-1.5">

@@ -197,7 +197,7 @@ export function NewLeadModal({ isOpen, onClose, onSuccess }: NewLeadModalProps) 
 
     // 7. Assigned Representative
     if (!assignedTo.trim()) {
-      errs.assignedTo = "Please select an assigned Front Desk representative";
+      errs.assignedTo = "Please select an assigned representative or leave unassigned";
     }
 
     return errs;
@@ -308,10 +308,10 @@ export function NewLeadModal({ isOpen, onClose, onSuccess }: NewLeadModalProps) 
             </div>
             <div>
               <h2 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                New Front Desk Lead Intake
+                New Lead Intake (Managerial Allocation)
               </h2>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Register inquiries for <strong className="text-gray-800 dark:text-gray-200">{settings.name}</strong>
+                Register inquiries and assign to representatives for <strong className="text-gray-800 dark:text-gray-200">{settings.name}</strong>
               </p>
             </div>
           </div>
@@ -641,7 +641,7 @@ export function NewLeadModal({ isOpen, onClose, onSuccess }: NewLeadModalProps) 
 
               <div>
                 <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Assigned Front Desk Rep *
+                  Assigned Representative *
                 </label>
                 <select
                   value={assignedTo}
@@ -655,9 +655,10 @@ export function NewLeadModal({ isOpen, onClose, onSuccess }: NewLeadModalProps) 
                       : "border-gray-200 dark:border-white/10 focus:border-[#1B7167] focus:ring-1 focus:ring-[#1B7167]"
                   }`}
                 >
-                  {isLoadingReps && <option value="">Loading Front Desk staff...</option>}
+                  <option value="Unassigned">-- Leave Unassigned (Unassigned Queue) --</option>
+                  {isLoadingReps && <option value="">Loading active staff...</option>}
                   {!isLoadingReps && frontDeskReps.length === 0 && (
-                    <option value="">No active Front Desk staff available</option>
+                    <option value="">No active staff available</option>
                   )}
                   {frontDeskReps.map((rep) => (
                     <option key={rep.id} value={rep.full_name}>
