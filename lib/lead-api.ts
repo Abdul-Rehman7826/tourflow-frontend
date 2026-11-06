@@ -212,6 +212,26 @@ export async function updateLeadApi(id: string, updates: Partial<Lead>): Promise
 }
 
 /**
+ * Assigns a lead to an employee via POST /leads/{id}/assign
+ */
+export async function assignLeadApi(leadId: string, employeeId: string | null): Promise<Lead> {
+  const raw = await apiClient.post<ApiLeadResponse>(`/leads/${leadId}/assign`, {
+    assigned_employee_id: employeeId,
+  });
+  return backendToFrontendLead(raw);
+}
+
+/**
+ * Bulk assigns leads to an employee via POST /leads/bulk-assign
+ */
+export async function bulkAssignLeadsApi(leadIds: string[], employeeId: string | null): Promise<{ count: number }> {
+  return await apiClient.post<{ count: number }>('/leads/bulk-assign', {
+    lead_ids: leadIds,
+    assigned_employee_id: employeeId,
+  });
+}
+
+/**
  * Logs an interaction on an existing lead via POST /leads/{id}/interactions
  */
 export async function addLeadInteractionApi(leadId: string, payload: {

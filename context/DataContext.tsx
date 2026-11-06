@@ -315,6 +315,7 @@ export interface DataContextType {
   crmReady: boolean;
   crmError: string;
   bulkUpdateLeads: (ids: string[], change: BulkChange) => void;
+  deleteLead: (id: string) => Promise<boolean>;
   convertLead: (id: string, conversion: Conversion) => void;
   importLeads: (
     rows: ImportRow[],
@@ -1497,36 +1498,83 @@ export function DataProvider({ children }: { children: ReactNode }) {
       ).catch(() => {});
     });
   };
-  const activeReps = staffUsers
-    .filter(s => s.tenantId === tenant.id && s.status === 'Active' && s.role === 'FRONT_DESK')
-    .map(s => s.name);
+  const activeReps = useMemo(() => {
+    const list = new Set<string>();
+    if (user?.name) list.add(user.name);
+    employees
+      .filter((e) => e.tenantId === tenant.id && ((e.status as string) === 'ACTIVE' || (e.status as string) === 'Active'))
+      .forEach((e) => {
+        if (e.fullName) list.add(e.fullName);
+      });
+    staffUsers
+      .filter((s) => s.tenantId === tenant.id && s.status === 'Active')
+      .forEach((s) => {
+        if (s.name) list.add(s.name);
+      });
+    return Array.from(list);
+  }, [user?.name, employees, staffUsers, tenant.id]);
+
   const validateReps = (reps: string[]) => {
-    if (
-      new Set(reps).size !== reps.length ||
-      reps.some((rep) => !activeReps.includes(rep))
-    )
+    if (new Set(reps).size !== reps.length) {
+      throw new Error("Select unique agency representatives.");
+    }
+    const allowed = new Set(activeReps);
+    if (reps.some((rep) => !allowed.has(rep))) {
       throw new Error("Select active agency representatives only.");
+    }
   };
+
   const bulkUpdateLeads = (ids: string[], change: BulkChange) => {
     requireCRM();
-    if ("assignedTo" in change) validateReps([change.assignedTo]);
+    let effectiveChange: BulkChange = change;
+    if ("assignedTo" in change) {
+      validateReps([change.assignedTo]);
+      const matchedEmp = employees.find(
+        (e) => e.tenantId === tenant.id && e.fullName === change.assignedTo
+      );
+      effectiveChange = {
+        ...change,
+        assignedEmployeeId: change.assignedEmployeeId || matchedEmp?.id,
+      };
+    }
     commitCRM(
       applyBulk(
         crmRef.current,
         tenant.id,
         ids,
-        change,
+        effectiveChange,
         user!.name,
         new Date().toISOString(),
         () => crypto.randomUUID(),
       ),
     );
     // Live API Sync
-    import("@/lib/lead-api").then(({ updateLeadApi }) => {
+    const repAssignee = "assignedTo" in effectiveChange ? effectiveChange.assignedTo : undefined;
+    const repEmployeeId = "assignedTo" in effectiveChange ? effectiveChange.assignedEmployeeId : undefined;
+    import("@/lib/lead-api").then(({ updateLeadApi, assignLeadApi }) => {
       ids.forEach((id) => {
-        updateLeadApi(id, change).catch(() => {});
+        if (repAssignee) {
+          const empId =
+            repEmployeeId ||
+            employees.find((e) => e.fullName === repAssignee)?.id ||
+            null;
+          assignLeadApi(id, empId).catch(() => {});
+        }
+        updateLeadApi(id, effectiveChange).catch(() => {});
       });
     });
+  };
+
+  const deleteLead = async (leadId: string): Promise<boolean> => {
+    if (!user || !["AGENCY_ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+      throw new Error("Permission denied: Only an Agency Administrator can delete leads.");
+    }
+    commitCRM({
+      ...crmRef.current,
+      leads: crmRef.current.leads.filter((l) => l.id !== leadId),
+    });
+    const { deleteLeadApi } = await import("@/lib/lead-api");
+    return await deleteLeadApi(leadId);
   };
   const convertLead = (leadId: string, conversion: Conversion) => {
     requireOperations(["AGENCY_ADMIN", "FRONT_DESK"]);
@@ -3092,6 +3140,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         crmReady,
         crmError,
         bulkUpdateLeads,
+        deleteLead,
         convertLead,
         importLeads,
         distributeUnassigned,

@@ -87,7 +87,7 @@ export interface CRMState {
   duplicates: Duplicate[];
 }
 export type BulkChange =
-  | { assignedTo: string }
+  | { assignedTo: string; assignedEmployeeId?: string }
   | { interestType: LeadInterestType }
   | { status: LeadStatus; lossReason?: LossReason; lossNote?: string };
 

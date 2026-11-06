@@ -1,6 +1,7 @@
 "use client";
 
 import { useAgencySettings } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
 
 import React, { useState } from "react";
 import { Lead } from "@/types/erp";
@@ -17,6 +18,7 @@ import {
   Building,
   Mail,
   ExternalLink,
+  Trash2,
 } from "lucide-react";
 
 interface LeadInteractionDrawerProps {
@@ -24,6 +26,7 @@ interface LeadInteractionDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenConvertModal?: (lead: Lead) => void;
+  onDeleteLead?: (leadId: string) => Promise<void> | void;
 }
 
 export function LeadInteractionDrawer({
@@ -31,10 +34,14 @@ export function LeadInteractionDrawer({
   isOpen,
   onClose,
   onOpenConvertModal,
+  onDeleteLead,
 }: LeadInteractionDrawerProps) {
   const { addInteraction } = useData();
   const { formatMoney } = useAgencySettings();
   const { roleMeta } = useRole();
+  const { user } = useAuth();
+  const isAdmin = ["AGENCY_ADMIN", "SUPER_ADMIN"].includes(user?.role || "");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [noteText, setNoteText] = useState("");
   const [channel, setChannel] = useState<"WhatsApp" | "Walk-in" | "Phone Call" | "Email" | "Office Visit">("WhatsApp");
@@ -183,12 +190,35 @@ export function LeadInteractionDrawer({
               </div>
             </div>
 
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors shrink-0 cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-1">
+              {isAdmin && onDeleteLead && (
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={async () => {
+                    if (window.confirm(`Are you sure you want to delete lead "${lead.fullName}"? This cannot be undone.`)) {
+                      setIsDeleting(true);
+                      try {
+                        await onDeleteLead(lead.id);
+                        onClose();
+                      } finally {
+                        setIsDeleting(false);
+                      }
+                    }
+                  }}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-500/10 transition-colors shrink-0 cursor-pointer"
+                  title="Delete lead permanently (Agency Admin only)"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors shrink-0 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Action Strip: Prominent Conversion Button & Info */}

@@ -8,6 +8,7 @@ import {
   Tag,
   XCircle,
   X,
+  Trash2,
 } from "lucide-react";
 
 interface BulkActionDockProps {
@@ -15,6 +16,7 @@ interface BulkActionDockProps {
   onClearSelection: () => void;
   onApplyChange: (change: BulkChange) => void;
   onPromptMarkLost: () => void;
+  onDeleteSelected?: () => void;
   activeReps: string[];
 }
 
@@ -23,6 +25,7 @@ export function BulkActionDock({
   onClearSelection,
   onApplyChange,
   onPromptMarkLost,
+  onDeleteSelected,
   activeReps,
 }: BulkActionDockProps) {
   if (selectedCount === 0) return null;
@@ -117,6 +120,19 @@ export function BulkActionDock({
           <XCircle className="w-3.5 h-3.5" />
           <span>Mark as Lost</span>
         </button>
+
+        {/* Action: Bulk Delete (Agency Admin Only) */}
+        {onDeleteSelected && (
+          <button
+            type="button"
+            onClick={onDeleteSelected}
+            className="bg-rose-600/40 hover:bg-rose-600/60 text-white border border-rose-400/40 px-3 py-1.5 rounded-xl font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Delete selected leads permanently (Agency Admin only)"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-white" />
+            <span>Delete Selected</span>
+          </button>
+        )}
       </div>
     </div>
   );

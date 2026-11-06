@@ -44,6 +44,9 @@ import {
   CheckCircle,
   Flame,
   X,
+  Trash2,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 
 export default function FrontDeskLeadsPage() {
@@ -58,6 +61,8 @@ function LeadsWorkspace() {
     invoices,
     duplicates,
     bulkUpdateLeads,
+    deleteLead,
+    employees,
     activeReps,
     crmReady,
     crmError,
@@ -66,6 +71,7 @@ function LeadsWorkspace() {
   const { settings } = useAgencySettings();
 
   const isAdmin = user?.role === "AGENCY_ADMIN" || user?.role === "SUPER_ADMIN" || user?.role === "TOUR_MANAGER";
+  const isAgencyAdmin = user?.role === "AGENCY_ADMIN" || user?.role === "SUPER_ADMIN";
   const [adminTab, setAdminTab] = useState<"all" | "import" | "duplicates" | "verification">("all");
   const [activeQueue, setActiveQueue] = useState<LeadQueueType>(isAdmin ? "UNASSIGNED" : "ACTIVE_SALES");
 
@@ -73,8 +79,22 @@ function LeadsWorkspace() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [lostIds, setLostIds] = useState<string[]>([]);
   const [isLostDialogOpen, setIsLostDialogOpen] = useState(false);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [actionError, setActionError] = useState("");
   const [successToast, setSuccessToast] = useState<string | null>(null);
+
+  // Formatted assignable staff options for rich delegation
+  const staffOptions = useMemo(() => {
+    return employees
+      .filter((e) => (e.status as string) === "ACTIVE" || (e.status as string) === "Active")
+      .map((e) => ({
+        id: e.id,
+        name: e.fullName,
+        role: e.designation || e.department || "Front Desk",
+        department: e.department,
+      }));
+  }, [employees]);
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState("");
@@ -227,23 +247,61 @@ function LeadsWorkspace() {
   };
 
   // 1-Click Self-Assign
-  const handleAssignToMe = (leadId: string) => {
+  const handleAssignToMe = async (leadId: string) => {
     if (!user?.name) return;
     try {
       bulkUpdateLeads([leadId], { assignedTo: user.name });
-      showToast(`Lead assigned to ${user.name}`);
+      showToast(`Lead assigned to ${user.name} — Moved to Active Sales`);
     } catch (err) {
-      setActionError((err as Error).message);
+      const msg = (err as Error).message;
+      setActionError(msg);
+      showToast(`Assignment failed: ${msg}`);
     }
   };
 
   // Rep Delegate
-  const handleAssignRep = (leadId: string, repName: string) => {
+  const handleAssignRep = async (leadId: string, repName: string) => {
     try {
       bulkUpdateLeads([leadId], { assignedTo: repName });
-      showToast(`Lead assigned to ${repName}`);
+      showToast(`Lead assigned to ${repName} — Moved to Active Sales`);
     } catch (err) {
-      setActionError((err as Error).message);
+      const msg = (err as Error).message;
+      setActionError(msg);
+      showToast(`Delegation failed: ${msg}`);
+    }
+  };
+
+  // Agency Admin Lead Delete
+  const handleDeleteLead = async (leadId: string) => {
+    try {
+      await deleteLead(leadId);
+      setSelectedIds((prev) => prev.filter((id) => id !== leadId));
+      showToast("Lead permanently deleted.");
+    } catch (err) {
+      const msg = (err as Error).message;
+      setActionError(msg);
+      showToast(`Delete failed: ${msg}`);
+    }
+  };
+
+  // Agency Admin Bulk Delete
+  const confirmBulkDelete = async () => {
+    if (!selectedIds.length) return;
+    setIsBulkDeleting(true);
+    try {
+      for (const id of selectedIds) {
+        await deleteLead(id);
+      }
+      const count = selectedIds.length;
+      setSelectedIds([]);
+      setIsBulkDeleteOpen(false);
+      showToast(`${count} lead(s) permanently deleted.`);
+    } catch (err) {
+      const msg = (err as Error).message;
+      setActionError(msg);
+      showToast(`Bulk delete failed: ${msg}`);
+    } finally {
+      setIsBulkDeleting(false);
     }
   };
 
@@ -553,7 +611,9 @@ function LeadsWorkspace() {
               onAssignToMe={handleAssignToMe}
               onAssignRep={handleAssignRep}
               onOpenDrawer={(lead) => setSelectedLeadForDrawer(lead)}
+              onDeleteLead={isAgencyAdmin ? handleDeleteLead : undefined}
               activeReps={activeReps}
+              staffOptions={staffOptions}
             />
           )}
 
@@ -566,6 +626,7 @@ function LeadsWorkspace() {
               onToggleSelectAll={toggleSelectAll}
               onOpenDrawer={(lead) => setSelectedLeadForDrawer(lead)}
               onOpenConvertModal={(lead) => setSelectedLeadForConvert(lead)}
+              onDeleteLead={isAgencyAdmin ? handleDeleteLead : undefined}
             />
           )}
 
@@ -596,6 +657,7 @@ function LeadsWorkspace() {
               setLostIds(selectedIds);
               setIsLostDialogOpen(true);
             }}
+            onDeleteSelected={isAgencyAdmin ? () => setIsBulkDeleteOpen(true) : undefined}
             activeReps={activeReps}
           />
         </>
@@ -610,6 +672,7 @@ function LeadsWorkspace() {
           setSelectedLeadForDrawer(null);
           setSelectedLeadForConvert(lead);
         }}
+        onDeleteLead={isAgencyAdmin ? handleDeleteLead : undefined}
       />
 
       {/* Convert Lead to Booking Modal */}
@@ -647,6 +710,66 @@ function LeadsWorkspace() {
             showToast(`${lostIds.length} lead(s) marked as lost.`);
           }}
         />
+      )}
+
+      {/* Admin Bulk Delete Confirmation Modal */}
+      {isBulkDeleteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="max-w-md w-full rounded-2xl bg-white dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400">
+              <div className="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                  Bulk Delete Leads
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Agency Administrator Permission Required
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+              Are you sure you want to permanently delete{" "}
+              <strong className="text-gray-900 dark:text-white">
+                {selectedIds.length} selected lead(s)
+              </strong>
+              ? All corresponding inquiry records, client notes, and interactions
+              will be permanently removed from the database. This action cannot be
+              undone.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                disabled={isBulkDeleting}
+                onClick={() => setIsBulkDeleteOpen(false)}
+                className="px-4 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isBulkDeleting}
+                onClick={confirmBulkDelete}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                {isBulkDeleting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting {selectedIds.length} leads...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Permanently</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Submit Payment Proof Modal */}

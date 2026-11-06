@@ -3,6 +3,7 @@
 import React from "react";
 import { Lead, LeadStatus } from "@/types/erp";
 import { useAgencySettings } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
 import { getLeadCallbackStatus, getWhatsAppLink } from "@/lib/leads-api";
 import {
   User,
@@ -14,6 +15,9 @@ import {
   AlertTriangle,
   Flame,
   CheckCircle2,
+  Trash2,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 
 interface ActiveSalesQueueTableProps {
@@ -24,6 +28,7 @@ interface ActiveSalesQueueTableProps {
   onToggleSelectAll: () => void;
   onOpenDrawer: (lead: Lead) => void;
   onOpenConvertModal: (lead: Lead) => void;
+  onDeleteLead?: (leadId: string) => Promise<void> | void;
 }
 
 export function ActiveSalesQueueTable({
@@ -34,9 +39,14 @@ export function ActiveSalesQueueTable({
   onToggleSelectAll,
   onOpenDrawer,
   onOpenConvertModal,
+  onDeleteLead,
 }: ActiveSalesQueueTableProps) {
   const { formatMoney } = useAgencySettings();
+  const { user } = useAuth();
   const isAllSelected = leads.length > 0 && leads.every((l) => selectedIds.includes(l.id));
+  const isAdmin = ["AGENCY_ADMIN", "SUPER_ADMIN"].includes(user?.role || "");
+  const [leadToDelete, setLeadToDelete] = React.useState<Lead | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   const getStageBadge = (status: LeadStatus) => {
     switch (status) {
@@ -246,6 +256,18 @@ export function ActiveSalesQueueTable({
                       <CheckCircle2 className="w-3 h-3 text-white" />
                       <span className="text-white font-semibold">Convert</span>
                     </button>
+
+                    {/* Agency Admin Delete Button */}
+                    {isAdmin && onDeleteLead && (
+                      <button
+                        type="button"
+                        onClick={() => setLeadToDelete(lead)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer ml-0.5"
+                        title="Delete lead permanently (Agency Admin only)"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -253,6 +275,65 @@ export function ActiveSalesQueueTable({
           })}
         </tbody>
       </table>
+
+      {/* Delete Confirmation Modal (Agency Admin Only) */}
+      {leadToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="max-w-md w-full rounded-2xl bg-white dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400">
+              <div className="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">Delete Lead Permanently</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Agency Administrator Permission Required</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+              Are you sure you want to delete active lead <strong className="text-gray-900 dark:text-white">{leadToDelete.fullName}</strong> ({leadToDelete.phone})? All associated inquiry logs and audit notes will be permanently purged from the database. This action cannot be undone.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setLeadToDelete(null)}
+                className="px-4 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={async () => {
+                  if (!onDeleteLead) return;
+                  setIsDeleting(true);
+                  try {
+                    await onDeleteLead(leadToDelete.id);
+                    setLeadToDelete(null);
+                  } finally {
+                    setIsDeleting(false);
+                  }
+                }}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Permanently</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

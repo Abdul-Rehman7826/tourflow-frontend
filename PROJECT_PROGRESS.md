@@ -15,6 +15,23 @@ distinguishes between:
 - prototype behavior that is browser-local and still requires production backend work.
 
 ## Current Repository Snapshot
+### Professional Lead Allocation & Agency Admin Lead Deletion (2026-11-06)
+
+- **Quick Allocation Upgrade & Interactivity**:
+  - Re-engineered the "QUICK ALLOCATION" column in `components/leads/UnassignedQueueTable.tsx` to provide immediate tactile visual feedback and full integration with live agency staff.
+  - Replaced the unstyled native `<select>` with an elegant popover dropdown showing active Front Desk & Sales representatives complete with avatar badges, designations, department tags, and status dots.
+  - Added interactive loading states (`Loader2` spinner and "Assigning...") to both the "Assign to Me" button and the delegation actions, giving immediate visual confirmation and preventing double-clicks.
+  - Fixed staff resolution in `context/DataContext.tsx`: `activeReps` and `staffOptions` now derive from real live employee records (`employees` state loaded from `/api/v1/hr/lead-assignees` and MySQL HR) plus the session user, eliminating silent validation errors.
+  - Integrated `assignLeadApi` (`POST /api/v1/leads/{id}/assign`) and `bulkAssignLeadsApi` in `lib/lead-api.ts` and `CrmService.php` to immediately synchronize assignments with the backend database.
+  - Display immediate toast notifications upon assignment and cleanly animate assigned leads into the **Active Sales Queue**.
+- **Agency Admin Lead Deletion (Strict RBAC)**:
+  - Enforced strict role-based access control: lead deletion is strictly restricted to `AGENCY_ADMIN` and `SUPER_ADMIN`. Front Desk agents and regular consultants have no delete buttons.
+  - Added single-lead delete actions with trash icon buttons in `UnassignedQueueTable.tsx`, `ActiveSalesQueueTable.tsx`, and `LeadInteractionDrawer.tsx`.
+  - Added bulk delete action in `BulkActionDock.tsx` for deleting multiple selected leads in one operation.
+  - Implemented confirmation dialog modals with clear warnings before permanent deletion.
+  - Implemented backend endpoint `DELETE /api/v1/leads/{id}` in `backend/public/index.php` and `CrmService.php` with transaction rollback, `lead_interactions` cascade, and 403 Forbidden gating for unauthorized roles.
+  - All 30 unit tests pass, TypeScript compiler check (`tsc --noEmit`) passes with 0 errors.
+
 ### Lead Intake Duplicate Elimination, Assignee Mapping & Queue Table Checkbox Fix (2026-11-06)
 
 - Diagnosed and resolved duplicate lead insertion and queue misplacement:
