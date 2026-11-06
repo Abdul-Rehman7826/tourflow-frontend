@@ -385,7 +385,7 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
               </span>
             </div>
             <div className="font-semibold text-gray-900 dark:text-white truncate">
-              {user?.name || "Staff Member"}
+              {user?.name || user?.full_name || (user?.email ? user.email.split("@")[0] : "Staff Member")}
             </div>
           </div>
         )}

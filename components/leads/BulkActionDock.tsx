@@ -62,6 +62,9 @@ export function BulkActionDock({
             className="bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#1B7167] transition-colors cursor-pointer"
           >
             <option value="" className="text-gray-900 bg-white">Assign Rep...</option>
+            <option value="Unassigned" className="text-amber-700 bg-amber-50 font-semibold">
+              -- Move to Unassigned --
+            </option>
             {activeReps.map((rep) => (
               <option key={rep} value={rep} className="text-gray-900 bg-white">
                 {rep}

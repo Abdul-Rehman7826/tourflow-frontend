@@ -61,9 +61,18 @@ export function ProfilePinModal({ profile, onClose }: { profile: AgencyProfile; 
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || "Unable to unlock this profile.");
       const result = data as UnlockResponse;
+      const displayName =
+        result.user.name ||
+        result.user.full_name ||
+        profile.full_name ||
+        (result.user.email as string)?.split("@")[0] ||
+        "Staff Member";
       const mappedUser = {
         ...result.user,
-        name: result.user.name || result.user.full_name,
+        name: displayName,
+        full_name: result.user.full_name || profile.full_name || displayName,
+        avatar_color: (result.user.avatar_color as string) || profile.avatar_color,
+        avatar_icon: (result.user.avatar_icon as string) || profile.avatar_icon,
         tenantId: result.user.tenant_id,
         screenAccess: result.user.screen_access,
       };

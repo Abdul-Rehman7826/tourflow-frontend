@@ -185,9 +185,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (res.ok) {
           const freshSession = await res.json();
           const freshUser = freshSession.user;
+          const displayName =
+            freshUser.name ||
+            freshUser.full_name ||
+            [freshUser.first_name, freshUser.last_name].filter(Boolean).join(" ").trim() ||
+            (freshUser.email ? freshUser.email.split("@")[0] : "Staff");
           const mappedUser = {
             ...freshUser,
-            name: freshUser.name || freshUser.full_name,
+            name: displayName,
+            full_name: freshUser.full_name || displayName,
             tenantId: freshUser.tenantId || freshUser.tenant_id,
             screenAccess: freshUser.screenAccess || freshUser.screen_access,
             tenant: freshSession.tenant,
@@ -252,9 +258,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
+      const displayName =
+        data.user.name ||
+        data.user.full_name ||
+        [data.user.first_name, data.user.last_name].filter(Boolean).join(" ").trim() ||
+        (data.user.email ? data.user.email.split("@")[0] : "Staff");
+
       const mappedUser = {
         ...data.user,
-        name: data.user.name || data.user.full_name,
+        name: displayName,
+        full_name: data.user.full_name || displayName,
         tenantId: data.user.tenantId || data.user.tenant_id,
         screenAccess: data.user.screenAccess || data.user.screen_access,
         tenant: data.tenant,
@@ -366,9 +379,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!response.ok) {
         return { success: false, error: data.detail || 'The temporary OTP could not be verified.' };
       }
+      const displayName =
+        data.user.name ||
+        data.user.full_name ||
+        [data.user.first_name, data.user.last_name].filter(Boolean).join(" ").trim() ||
+        (data.user.email ? data.user.email.split("@")[0] : "Staff");
+
       const mappedUser = {
         ...data.user,
-        name: data.user.name || data.user.full_name,
+        name: displayName,
+        full_name: data.user.full_name || displayName,
         tenantId: data.user.tenantId || data.user.tenant_id,
         screenAccess: data.user.screenAccess || data.user.screen_access,
         tenant: data.tenant,

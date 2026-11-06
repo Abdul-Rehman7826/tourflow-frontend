@@ -17,6 +17,7 @@ import {
   Trash2,
   AlertCircle,
   Loader2,
+  Pencil,
 } from "lucide-react";
 
 export interface AssigneeStaffOption {
@@ -34,6 +35,7 @@ interface UnassignedQueueTableProps {
   onAssignToMe: (leadId: string) => Promise<void> | void;
   onAssignRep: (leadId: string, repName: string) => Promise<void> | void;
   onOpenDrawer: (lead: Lead) => void;
+  onOpenEditModal?: (lead: Lead) => void;
   onDeleteLead?: (leadId: string) => Promise<void> | void;
   activeReps: string[];
   staffOptions?: AssigneeStaffOption[];
@@ -47,6 +49,7 @@ export function UnassignedQueueTable({
   onAssignToMe,
   onAssignRep,
   onOpenDrawer,
+  onOpenEditModal,
   onDeleteLead,
   activeReps,
   staffOptions = [],
@@ -349,6 +352,18 @@ export function UnassignedQueueTable({
                         </div>
                       )}
                     </div>
+
+                    {/* Agency Admin Edit Button */}
+                    {isAdmin && onOpenEditModal && (
+                      <button
+                        type="button"
+                        onClick={() => onOpenEditModal(lead)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-500/10 transition-colors cursor-pointer"
+                        title="Edit lead inquiry details (Agency Admin)"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    )}
 
                     {/* Agency Admin Delete Button */}
                     {isAdmin && onDeleteLead && (

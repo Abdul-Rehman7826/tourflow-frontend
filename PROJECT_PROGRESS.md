@@ -15,7 +15,53 @@ distinguishes between:
 - prototype behavior that is browser-local and still requires production backend work.
 
 ## Current Repository Snapshot
-### Professional Lead Allocation & Agency Admin Lead Deletion (2026-11-06)
+### Staff Identity Resolution & Front Desk Intake Auto-Assignee (2026-11-06)
+
+- **Staff Information & Identity Resolution**:
+  - Diagnosed why staff accounts displayed generic "Staff" in the header and "Staff Member" in the sidebar with a fallback email initial:
+    - In `backend/src/Auth/AuthService.php`, `userSummary()` previously omitted `name` and `full_name`, returning only split `first_name` and `last_name`. On `/auth/me` and session validation, `mappedUser.name` became `undefined`.
+    - In `backend/src/Auth/Access.php`, `loadContext()` previously loaded only from `users` without joining `employees`. Added `LEFT JOIN employees e` and `LEFT JOIN departments d` so that all authenticated user contexts automatically resolve `employee_full_name` and `department_name`.
+    - Updated `userSummary()` in `AuthService.php` to populate `full_name`, `name`, and `department` derived via `self::profileName()`.
+    - Updated `findUserWithTenantByEmail()` in `AuthService.php` to join `employees` and resolve full staff names.
+    - Updated `context/AuthContext.tsx` session mapping to synthesize `displayName` from `freshUser.name || freshUser.full_name || [first_name, last_name] || email`.
+    - Enhanced `components/layout/HeaderProfileDropdown.tsx`: resolves staff initials from the true full name (`fiza salman` -> `FS`, `Faiza Saleem` -> `FS`), displays staff name, role, email, and department badge in the dropdown.
+    - Enhanced `components/layout/Sidebar.tsx`: footer now displays the exact logged-in staff member's full name alongside their role badge.
+    - Updated `components/auth/ProfilePinModal.tsx` to forward the unlocked profile's full name into the stored session.
+- **Default Assignee in Front Desk Lead Intake**:
+  - In `components/leads/NewLeadModal.tsx`, when the modal opens and fetches available front desk representatives from `/api/v1/hr/lead-assignees`, it now **automatically defaults the "Assigned Front Desk Rep *" dropdown to the logged-in staff member's profile**.
+  - Matches the session `user` against `reps` by employee ID, user ID, email, or full name.
+  - Front Desk receptionists no longer have to manually select themselves from the dropdown when logging an inquiry.
+- **Verification & Quality Assurance**:
+  - All 30 unit tests pass (`lead-intake.test.cjs`, `leads.test.cjs`, `staff-intake.test.cjs`, `settings.test.cjs`).
+  - TypeScript compiler (`tsc --noEmit`) passes with 0 errors.
+  - `git diff --check` passes with 0 issues.
+  - Full production Next.js build (`npm run build -- --webpack`) succeeds across all 31 application routes.
+
+### Front Desk Lead Ownership Scoping, Lead Editing & Unassigning (2026-11-06)
+
+- **Front Desk Lead Ownership Scoping**:
+  - Enforced strict role-based queue ownership in `app/(dashboard)/leads/page.tsx`:
+    - Non-manager users (`FRONT_DESK`, `VISA_CONSULTANT`, etc.) only see leads assigned directly to their profile in `Active Sales Queue` and `Archived & Closed`.
+    - Implemented `isLeadAssignedToUser` comparing `lead.assignedTo`, `lead.assignedEmployeeId`, and `lead.assigned_employee_id` against current `user.name`, `user.full_name`, `user.id`, and linked employee profile records in `employees`.
+    - Dynamically scoped the `Active Sales Queue` tab badge count and KPI metrics (`stats`: callbacks due, walk-ins, warm inquiries, closed deals) for front desk staff to reflect only their assigned portfolio.
+    - Agency Admins (`AGENCY_ADMIN`, `SUPER_ADMIN`, `TOUR_MANAGER`) retain company-wide oversight of all agency leads and queues.
+  - Hardened backend scoping in `backend/src/Crm/CrmService.php`:
+    - `leads()` automatically scopes non-manager queries to `l.assigned_employee_id = :actor_emp` resolved via employee ID, user ID, email, or full name.
+    - `queueStats()` calculates queue metrics scoped to the authenticated front desk representative.
+- **Unassign Lead (Return to Unassigned Queue)**:
+  - Added dedicated "Unassign" action button (`UserMinus` icon) to active sales queue rows in `components/leads/ActiveSalesQueueTable.tsx` for Agency Admins.
+  - Implemented an unassign confirmation modal with prompt warning before returning the lead to the unassigned pool.
+  - Added `-- Move to Unassigned --` option to the `Assign Rep...` dropdown in `components/leads/BulkActionDock.tsx` allowing multi-lead unassignment in one operation.
+  - Integrated `bulkUpdateLeads([id], { assignedTo: "Unassigned" })` and `assignLeadApi(id, null)` in `context/DataContext.tsx` to set `assigned_employee_id = NULL` in MySQL and move leads back to the `UNASSIGNED` queue.
+- **Agency Admin Lead Editing**:
+  - Created and wired `components/leads/EditLeadModal.tsx` accessible via a pencil icon button in both `ActiveSalesQueueTable.tsx` and `UnassignedQueueTable.tsx` (gated to `AGENCY_ADMIN` / `SUPER_ADMIN`).
+  - Supports comprehensive in-place editing: Traveler Full Name, Contact Phone with international country code selector, Email Address, Source, Travel Category Interest (`GROUP_TOUR`, `UMRAH`, `VISA`, `CUSTOM_PACKAGE`), Destination / Target Location, Passenger Pax with stepper `[-] [+]`, Offer / Target Budget with "Open Budget" toggle, Scheduled Callback Date, Assigned Rep (with `-- Unassigned (Return to Queue) --`), and Discussion Notes.
+  - Added `updateLead(id, updates)` in `context/DataContext.tsx` and backend `updateLead()` in `backend/src/Crm/CrmService.php` to persist changes immediately to MySQL.
+- **Verification & Quality Assurance**:
+  - All 30 unit tests pass across `tests/lead-intake.test.cjs`, `tests/leads.test.cjs`, `tests/staff-intake.test.cjs`, and `tests/settings.test.cjs`.
+  - TypeScript compiler (`tsc --noEmit`) passes with 0 errors.
+  - `git diff --check` passes with 0 whitespace issues.
+  - Production Next.js build (`npm run build -- --webpack`) builds all 31 routes successfully.
 
 - **Quick Allocation Upgrade & Interactivity**:
   - Re-engineered the "QUICK ALLOCATION" column in `components/leads/UnassignedQueueTable.tsx` to provide immediate tactile visual feedback and full integration with live agency staff.

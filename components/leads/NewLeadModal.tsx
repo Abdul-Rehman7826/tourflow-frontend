@@ -3,6 +3,7 @@
 import { useAgencySettings } from "@/context/ThemeContext";
 import React, { useEffect, useState, useMemo } from "react";
 import { useData } from "@/context/DataContext";
+import { useAuth } from "@/context/AuthContext";
 import { apiClient } from "@/lib/api-client";
 import { LeadInterestType, LeadSource } from "@/types/erp";
 import {
@@ -46,7 +47,8 @@ const COUNTRY_CODES = [
 ];
 
 export function NewLeadModal({ isOpen, onClose, onSuccess }: NewLeadModalProps) {
-  const { addLead, clients } = useData();
+  const { addLead, clients, employees } = useData();
+  const { user } = useAuth();
   const { settings } = useAgencySettings();
 
   // Form State
@@ -92,9 +94,13 @@ export function NewLeadModal({ isOpen, onClose, onSuccess }: NewLeadModalProps) 
     );
   }, [phone, clients]);
 
-  // Fetch front desk staff
+  // Fetch front desk staff and default to logged in user
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      setIsSubmitted(false);
+      setSubmitError("");
+      return;
+    }
     let active = true;
     queueMicrotask(() => {
       if (active) setIsLoadingReps(true);
@@ -104,9 +110,30 @@ export function NewLeadModal({ isOpen, onClose, onSuccess }: NewLeadModalProps) 
       .then((reps) => {
         if (!active) return;
         setFrontDeskReps(reps);
-        setAssignedTo((current) =>
-          reps.some((rep) => rep.full_name === current) ? current : reps[0]?.full_name || ""
-        );
+
+        // Auto-match currently logged in staff member
+        const matchedSelf = reps.find((rep) => {
+          if (!user) return false;
+          const uName = (user.name || "").trim().toLowerCase();
+          const uFullName = (user.full_name || "").trim().toLowerCase();
+          const repName = rep.full_name.trim().toLowerCase();
+          if (uName && repName === uName) return true;
+          if (uFullName && repName === uFullName) return true;
+
+          const emp = employees.find(
+            (e) =>
+              e.userId === user.id ||
+              e.id === user.id ||
+              (user.email && e.email?.toLowerCase() === user.email.toLowerCase()) ||
+              (uName && e.fullName.toLowerCase() === uName) ||
+              (uFullName && e.fullName.toLowerCase() === uFullName)
+          );
+          if (emp && emp.id === rep.id) return true;
+          return false;
+        });
+
+        const defaultRep = matchedSelf?.full_name || reps[0]?.full_name || "";
+        setAssignedTo(defaultRep);
       })
       .catch(() => {
         if (active) {
@@ -120,7 +147,7 @@ export function NewLeadModal({ isOpen, onClose, onSuccess }: NewLeadModalProps) 
     return () => {
       active = false;
     };
-  }, [isOpen]);
+  }, [isOpen, user, employees]);
 
   // Reactive Form Validation: recalculates synchronously whenever inputs change
   const formErrors = useMemo(() => {

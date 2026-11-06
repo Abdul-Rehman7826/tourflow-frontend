@@ -315,6 +315,7 @@ export interface DataContextType {
   crmReady: boolean;
   crmError: string;
   bulkUpdateLeads: (ids: string[], change: BulkChange) => void;
+  updateLead: (id: string, updates: Partial<Lead>) => Promise<Lead>;
   deleteLead: (id: string) => Promise<boolean>;
   convertLead: (id: string, conversion: Conversion) => void;
   importLeads: (
@@ -1528,14 +1529,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
     requireCRM();
     let effectiveChange: BulkChange = change;
     if ("assignedTo" in change) {
-      validateReps([change.assignedTo]);
-      const matchedEmp = employees.find(
-        (e) => e.tenantId === tenant.id && e.fullName === change.assignedTo
-      );
-      effectiveChange = {
-        ...change,
-        assignedEmployeeId: change.assignedEmployeeId || matchedEmp?.id,
-      };
+      if (change.assignedTo === "Unassigned" || change.assignedTo === "") {
+        effectiveChange = {
+          assignedTo: "Unassigned",
+          assignedEmployeeId: undefined,
+        };
+      } else {
+        validateReps([change.assignedTo]);
+        const matchedEmp = employees.find(
+          (e) => e.tenantId === tenant.id && e.fullName === change.assignedTo
+        );
+        effectiveChange = {
+          ...change,
+          assignedEmployeeId: change.assignedEmployeeId || matchedEmp?.id,
+        };
+      }
     }
     commitCRM(
       applyBulk(
@@ -1553,16 +1561,56 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const repEmployeeId = "assignedTo" in effectiveChange ? effectiveChange.assignedEmployeeId : undefined;
     import("@/lib/lead-api").then(({ updateLeadApi, assignLeadApi }) => {
       ids.forEach((id) => {
-        if (repAssignee) {
+        if (repAssignee !== undefined) {
           const empId =
-            repEmployeeId ||
-            employees.find((e) => e.fullName === repAssignee)?.id ||
-            null;
+            repAssignee === "Unassigned"
+              ? null
+              : repEmployeeId ||
+                employees.find((e) => e.fullName === repAssignee)?.id ||
+                null;
           assignLeadApi(id, empId).catch(() => {});
         }
         updateLeadApi(id, effectiveChange).catch(() => {});
       });
     });
+  };
+
+  const updateLead = async (id: string, updates: Partial<Lead>): Promise<Lead> => {
+    requireCRM();
+    const existing = crmRef.current.leads.find((l) => l.id === id);
+    if (!existing) throw new Error("Lead not found.");
+
+    let assignedEmpId = updates.assignedEmployeeId || updates.assigned_employee_id;
+    let assignedName = updates.assignedTo;
+
+    if (assignedName === "Unassigned" || assignedName === "") {
+      assignedName = "Unassigned";
+      assignedEmpId = undefined;
+    } else if (assignedName && !assignedEmpId) {
+      const matched = employees.find(
+        (e) => e.tenantId === tenant.id && e.fullName.trim().toLowerCase() === assignedName?.trim().toLowerCase()
+      );
+      if (matched) assignedEmpId = matched.id;
+    }
+
+    const updatedLead: Lead = {
+      ...existing,
+      ...updates,
+      assignedTo: assignedName !== undefined ? assignedName : existing.assignedTo,
+      assignedEmployeeId: assignedEmpId,
+      assigned_employee_id: assignedEmpId,
+    };
+
+    commitCRM({
+      ...crmRef.current,
+      leads: crmRef.current.leads.map((l) => (l.id === id ? updatedLead : l)),
+    });
+
+    const { updateLeadApi, assignLeadApi } = await import("@/lib/lead-api");
+    if (assignedName !== undefined) {
+      await assignLeadApi(id, assignedEmpId || null).catch(() => {});
+    }
+    return await updateLeadApi(id, updatedLead);
   };
 
   const deleteLead = async (leadId: string): Promise<boolean> => {
@@ -3141,6 +3189,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         crmError,
         bulkUpdateLeads,
         deleteLead,
+        updateLead,
         convertLead,
         importLeads,
         distributeUnassigned,

@@ -32,6 +32,7 @@ import { PaymentVerificationQueue } from "@/components/invoices/PaymentRecoveryA
 import { SubmitPaymentProofModal } from "@/components/leads/SubmitPaymentProofModal";
 import { RecoveryCallLogModal } from "@/components/leads/RecoveryCallLogModal";
 import { VerifyPaymentModal } from "@/components/invoices/VerifyPaymentModal";
+import { EditLeadModal } from "@/components/leads/EditLeadModal";
 import { DashboardPageSkeleton } from "@/components/ui/Skeleton";
 
 import {
@@ -61,6 +62,7 @@ function LeadsWorkspace() {
     invoices,
     duplicates,
     bulkUpdateLeads,
+    updateLead,
     deleteLead,
     employees,
     activeReps,
@@ -103,6 +105,7 @@ function LeadsWorkspace() {
 
   // Modals & Drawers
   const [selectedLeadForDrawer, setSelectedLeadForDrawer] = useState<Lead | null>(null);
+  const [selectedLeadForEdit, setSelectedLeadForEdit] = useState<Lead | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [isNewLeadModalOpen, setIsNewLeadModalOpen] = useState(false);
   const [selectedLeadForConvert, setSelectedLeadForConvert] = useState<Lead | null>(null);
@@ -143,12 +146,58 @@ function LeadsWorkspace() {
       .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   }, [invoices, searchQuery]);
 
+  // Check if a lead belongs to the current user (for front desk staff scoping)
+  const isLeadAssignedToUser = useMemo(() => {
+    return (lead: Lead): boolean => {
+      if (!user) return false;
+      if (isAdmin) return true;
+
+      const leadAssigned = (lead.assignedTo || "").trim().toLowerCase();
+      const uName = (user.name || "").trim().toLowerCase();
+      const uFullName = (user.full_name || "").trim().toLowerCase();
+
+      if (leadAssigned && leadAssigned !== "unassigned" && (leadAssigned === uName || leadAssigned === uFullName)) {
+        return true;
+      }
+
+      const currentEmployee = employees.find(
+        (e) =>
+          e.userId === user.id ||
+          e.id === user.id ||
+          (user.email && e.email?.toLowerCase() === user.email.toLowerCase()) ||
+          (uName && e.fullName?.toLowerCase() === uName) ||
+          (uFullName && e.fullName?.toLowerCase() === uFullName)
+      );
+
+      if (currentEmployee) {
+        const empId = currentEmployee.id;
+        const leadEmpId = lead.assignedEmployeeId || lead.assigned_employee_id;
+        if (empId && leadEmpId && empId === leadEmpId) {
+          return true;
+        }
+        const empName = (currentEmployee.fullName || "").trim().toLowerCase();
+        if (empName && leadAssigned === empName) {
+          return true;
+        }
+      }
+
+      return false;
+    };
+  }, [user, isAdmin, employees]);
+
   // Filtered Leads for Active Queue
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
       // Check Queue match
       if (categorizeLeadQueue(lead) !== activeQueue) {
         return false;
+      }
+
+      // Front Desk Scoping: Non-managers only see leads assigned to them in Active Sales and Archive
+      if (!isAdmin && (activeQueue === "ACTIVE_SALES" || activeQueue === "ARCHIVE")) {
+        if (!isLeadAssignedToUser(lead)) {
+          return false;
+        }
       }
 
       // Search match
@@ -180,7 +229,7 @@ function LeadsWorkspace() {
 
       return true;
     });
-  }, [leads, activeQueue, searchQuery, sourceFilter, interestFilter, statusFilter]);
+  }, [leads, activeQueue, searchQuery, sourceFilter, interestFilter, statusFilter, isAdmin, isLeadAssignedToUser]);
 
   // Queue Counts
   const queueCounts = useMemo(() => {
@@ -190,9 +239,13 @@ function LeadsWorkspace() {
 
     leads.forEach((l) => {
       const q = categorizeLeadQueue(l);
-      if (q === "UNASSIGNED") unassigned++;
-      else if (q === "ACTIVE_SALES") activeSales++;
-      else if (q === "ARCHIVE") archive++;
+      if (q === "UNASSIGNED") {
+        unassigned++;
+      } else if (q === "ACTIVE_SALES") {
+        if (isAdmin || isLeadAssignedToUser(l)) activeSales++;
+      } else if (q === "ARCHIVE") {
+        if (isAdmin || isLeadAssignedToUser(l)) archive++;
+      }
     });
 
     return {
@@ -201,19 +254,20 @@ function LeadsWorkspace() {
       paymentRecovery: recoveryInvoices.length,
       archive,
     };
-  }, [leads, recoveryInvoices.length]);
+  }, [leads, recoveryInvoices.length, isAdmin, isLeadAssignedToUser]);
 
   // Metric Computations
   const stats = useMemo(() => {
-    const callbacksDue = leads.filter((l) => !!callbackBadge(l, todayStr)).length;
-    const walkInsCount = leads.filter((l) => l.source === "Walk-in" || l.status === "NEW").length;
-    const warmCount = leads.filter(
+    const scopedLeads = isAdmin ? leads : leads.filter(isLeadAssignedToUser);
+    const callbacksDue = scopedLeads.filter((l) => !!callbackBadge(l, todayStr)).length;
+    const walkInsCount = scopedLeads.filter((l) => l.source === "Walk-in" || l.status === "NEW").length;
+    const warmCount = scopedLeads.filter(
       (l) => l.status === "CONTACTED" || l.status === "QUOTE_SENT" || l.status === "FOLLOW_UP"
     ).length;
-    const convertedCount = leads.filter((l) => l.status === "CONVERTED").length;
+    const convertedCount = scopedLeads.filter((l) => l.status === "CONVERTED").length;
 
     return { callbacksDue, walkInsCount, warmCount, convertedCount };
-  }, [leads, todayStr]);
+  }, [leads, todayStr, isAdmin, isLeadAssignedToUser]);
 
   // Multi-Selection Handlers
   const toggleSelect = (id: string) => {
@@ -268,6 +322,32 @@ function LeadsWorkspace() {
       const msg = (err as Error).message;
       setActionError(msg);
       showToast(`Delegation failed: ${msg}`);
+    }
+  };
+
+  // Agency Admin Lead Unassign (Return to Unassigned Queue)
+  const handleUnassignLead = async (leadId: string) => {
+    try {
+      bulkUpdateLeads([leadId], { assignedTo: "Unassigned" });
+      setSelectedIds((prev) => prev.filter((id) => id !== leadId));
+      showToast("Lead returned to Unassigned Queue.");
+    } catch (err) {
+      const msg = (err as Error).message;
+      setActionError(msg);
+      showToast(`Unassign failed: ${msg}`);
+    }
+  };
+
+  // Agency Admin Edit Lead Details
+  const handleSaveLead = async (leadId: string, updates: Partial<Lead>) => {
+    try {
+      await updateLead(leadId, updates);
+      showToast("Lead details updated successfully.");
+    } catch (err) {
+      const msg = (err as Error).message;
+      setActionError(msg);
+      showToast(`Update failed: ${msg}`);
+      throw err;
     }
   };
 
@@ -611,6 +691,7 @@ function LeadsWorkspace() {
               onAssignToMe={handleAssignToMe}
               onAssignRep={handleAssignRep}
               onOpenDrawer={(lead) => setSelectedLeadForDrawer(lead)}
+              onOpenEditModal={isAgencyAdmin ? (lead) => setSelectedLeadForEdit(lead) : undefined}
               onDeleteLead={isAgencyAdmin ? handleDeleteLead : undefined}
               activeReps={activeReps}
               staffOptions={staffOptions}
@@ -626,6 +707,8 @@ function LeadsWorkspace() {
               onToggleSelectAll={toggleSelectAll}
               onOpenDrawer={(lead) => setSelectedLeadForDrawer(lead)}
               onOpenConvertModal={(lead) => setSelectedLeadForConvert(lead)}
+              onOpenEditModal={isAgencyAdmin ? (lead) => setSelectedLeadForEdit(lead) : undefined}
+              onUnassignLead={isAgencyAdmin ? handleUnassignLead : undefined}
               onDeleteLead={isAgencyAdmin ? handleDeleteLead : undefined}
             />
           )}
@@ -696,6 +779,18 @@ function LeadsWorkspace() {
           showToast(`New traveler lead "${leadName || "Inquiry"}" created successfully.`);
         }}
       />
+
+      {/* Edit Lead Modal */}
+      {selectedLeadForEdit && (
+        <EditLeadModal
+          lead={selectedLeadForEdit}
+          isOpen={!!selectedLeadForEdit}
+          onClose={() => setSelectedLeadForEdit(null)}
+          onSave={handleSaveLead}
+          staffOptions={staffOptions}
+          activeReps={activeReps}
+        />
+      )}
 
       {/* Loss Reason Prompt Modal */}
       {isLostDialogOpen && (
