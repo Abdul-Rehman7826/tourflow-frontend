@@ -89,7 +89,7 @@ export function ActiveSalesQueueTable({
 
   return (
     <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0B0F19] overflow-hidden overflow-x-auto shadow-sm">
-      <table className="w-full table-fixed text-left border-collapse">
+      <table className="w-full min-w-[1060px] table-fixed text-left border-collapse">
         <thead className="bg-gray-50 dark:bg-white/[0.02] border-b border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-500 uppercase tracking-wider font-mono">
           <tr>
             <th className="w-[44px] px-3 py-3 text-center">
@@ -101,11 +101,11 @@ export function ActiveSalesQueueTable({
                 className="w-4 h-4 rounded border-gray-300 dark:border-gray-700 text-[#1B7167] focus:ring-[#1B7167] cursor-pointer"
               />
             </th>
-            <th className="w-[24%] px-4 py-3">Lead &amp; Contact</th>
-            <th className="w-[20%] px-4 py-3">Interest / Budget</th>
-            <th className="w-[18%] px-4 py-3">Rep &amp; Stage</th>
-            <th className="w-[18%] px-4 py-3">Callback Schedule</th>
-            <th className="w-[20%] px-4 py-3 text-right">Actions</th>
+            <th className="w-[23%] min-w-[190px] px-4 py-3">Lead &amp; Contact</th>
+            <th className="w-[18%] min-w-[160px] px-4 py-3">Interest / Budget</th>
+            <th className="w-[16%] min-w-[140px] px-4 py-3">Rep &amp; Stage</th>
+            <th className="w-[17%] min-w-[155px] px-4 py-3">Callback Schedule</th>
+            <th className="w-[26%] min-w-[250px] px-4 py-3 text-right">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100 dark:divide-white/5 text-xs">
@@ -204,7 +204,7 @@ export function ActiveSalesQueueTable({
                 </td>
 
                 {/* Callback Schedule Pill */}
-                <td className="px-4 py-3.5">
+                <td className="px-4 py-3.5 whitespace-nowrap">
                   {callbackStatus === "OVERDUE" && (
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 font-mono text-[11px] font-bold animate-pulse">
                       <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
@@ -230,16 +230,16 @@ export function ActiveSalesQueueTable({
 
                 {/* Quick Touchpoints & Actions */}
                 <td
-                  className="px-4 py-3.5 text-right"
+                  className="px-4 py-3.5 text-right whitespace-nowrap"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="flex items-center justify-end gap-1.5">
+                  <div className="flex items-center justify-end gap-1.5 shrink-0 whitespace-nowrap">
                     {/* WhatsApp Action */}
                     <a
                       href={waLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+                      className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors shrink-0"
                       title="Open WhatsApp chat"
                     >
                       <MessageSquare className="w-3.5 h-3.5" />
@@ -248,7 +248,7 @@ export function ActiveSalesQueueTable({
                     {/* Phone Call Link */}
                     <a
                       href={`tel:${lead.phone}`}
-                      className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-colors"
+                      className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-colors shrink-0"
                       title="Direct phone dial"
                     >
                       <Phone className="w-3.5 h-3.5" />
@@ -258,7 +258,7 @@ export function ActiveSalesQueueTable({
                     <button
                       type="button"
                       onClick={() => onOpenConvertModal(lead)}
-                      className="bg-emerald-600 text-white font-medium hover:bg-emerald-500 px-2.5 py-1.5 rounded-lg shadow-sm text-xs flex items-center gap-1 transition-all active:scale-95 [&>svg]:text-white [&>span]:text-white"
+                      className="bg-emerald-600 text-white font-medium hover:bg-emerald-500 px-2.5 py-1.5 rounded-lg shadow-sm text-xs flex items-center gap-1 transition-all active:scale-95 [&>svg]:text-white [&>span]:text-white shrink-0 cursor-pointer"
                       title="Convert this lead to a confirmed travel booking"
                     >
                       <CheckCircle2 className="w-3 h-3 text-white" />
@@ -270,7 +270,7 @@ export function ActiveSalesQueueTable({
                       <button
                         type="button"
                         onClick={() => onOpenEditModal(lead)}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-500/10 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-500/10 transition-colors cursor-pointer shrink-0"
                         title="Edit lead inquiry details (Agency Admin)"
                       >
                         <Pencil className="w-3.5 h-3.5" />
@@ -282,7 +282,7 @@ export function ActiveSalesQueueTable({
                       <button
                         type="button"
                         onClick={() => setLeadToUnassign(lead)}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-500/10 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-500/10 transition-colors cursor-pointer shrink-0"
                         title="Return lead to Unassigned Queue (Agency Admin)"
                       >
                         <UserMinus className="w-3.5 h-3.5" />
@@ -294,7 +294,7 @@ export function ActiveSalesQueueTable({
                       <button
                         type="button"
                         onClick={() => setLeadToDelete(lead)}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer ml-0.5"
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer ml-0.5 shrink-0"
                         title="Delete lead permanently (Agency Admin only)"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

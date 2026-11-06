@@ -15,6 +15,22 @@ distinguishes between:
 - prototype behavior that is browser-local and still requires production backend work.
 
 ## Current Repository Snapshot
+### Small Screen Table Responsiveness & Action Overlap Fix (2026-11-06)
+
+- **Small Screen Responsiveness in Lead Queue Tables**:
+  - Diagnosed overlap in `ActiveSalesQueueTable.tsx` where on smaller screens (e.g. laptop viewports with sidebar open), the 6 action touchpoint buttons (WhatsApp, Phone call, Convert, Edit, Unassign, Delete) overflowed their 20% cell and spilled to the left across the `Callback Schedule` date pill.
+  - Implemented responsive table design in `components/leads/ActiveSalesQueueTable.tsx`:
+    - Enforced `min-w-[1060px]` on the table with parent `overflow-x-auto` to guarantee horizontal scroll instead of cell squishing on smaller laptop screens.
+    - Rebalanced column percentage and minimum widths: `Lead & Contact` (`w-[23%] min-w-[190px]`), `Interest / Budget` (`w-[18%] min-w-[160px]`), `Rep & Stage` (`w-[16%] min-w-[140px]`), `Callback Schedule` (`w-[17%] min-w-[155px]`), and expanded `Actions` (`w-[26%] min-w-[250px]`).
+    - Added `whitespace-nowrap` and `shrink-0` to the actions container and action buttons to prevent wrapping or overflowing into adjacent columns.
+  - Hardened `components/leads/UnassignedQueueTable.tsx`: added `overflow-x-auto` to wrapper, `min-w-[980px]` with balanced column widths, and `whitespace-nowrap` on the allocation column.
+  - Hardened `PaymentRecoveryQueueTable.tsx` and `ArchivedDealsTable.tsx` with `min-w` and `whitespace-nowrap` action cells.
+- **Verification & Quality Assurance**:
+  - All 30 unit tests pass across `lead-intake.test.cjs`, `leads.test.cjs`, `staff-intake.test.cjs`, and `settings.test.cjs`.
+  - TypeScript compiler (`tsc --noEmit`) passes with 0 errors.
+  - `git diff --check` passes cleanly.
+  - Production Next.js build (`npm run build -- --webpack`) builds all 31 routes successfully.
+
 ### Front Desk Dedicated Lead Intake with Locked Self-Assignment (2026-11-06)
 
 - **Dedicated Front Desk Intake Workflow (`NewLeadIntake.tsx`) with Irrevocable Self-Assignment**:

@@ -89,7 +89,7 @@ export function ArchivedDealsTable({
         </div>
       ) : (
         <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0B0F19] overflow-hidden overflow-x-auto shadow-sm">
-          <table className="w-full table-fixed text-left border-collapse">
+          <table className="w-full min-w-[960px] table-fixed text-left border-collapse">
             <thead className="bg-gray-50 dark:bg-white/[0.02] border-b border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-500 uppercase tracking-wider font-mono">
               <tr>
                 <th className="w-[24%] px-4 py-3">Lead / Client</th>
@@ -179,7 +179,7 @@ export function ArchivedDealsTable({
 
                     {/* Actions */}
                     <td
-                      className="px-4 py-3.5 text-right"
+                      className="px-4 py-3.5 text-right whitespace-nowrap"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {!isConverted && (

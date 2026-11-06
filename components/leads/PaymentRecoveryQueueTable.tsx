@@ -71,7 +71,7 @@ export function PaymentRecoveryQueueTable({
 
   return (
     <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0B0F19] overflow-hidden overflow-x-auto shadow-sm">
-      <table className="w-full table-fixed text-left border-collapse">
+      <table className="w-full min-w-[1020px] table-fixed text-left border-collapse">
         <thead className="bg-gray-50 dark:bg-white/[0.02] border-b border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-500 uppercase tracking-wider font-mono">
           <tr>
             <th className="w-[18%] px-4 py-3">Invoice / Ref</th>
@@ -203,7 +203,7 @@ export function PaymentRecoveryQueueTable({
                 </td>
 
                 {/* Recovery Actions Column */}
-                <td className="px-4 py-3.5 text-right">
+                <td className="px-4 py-3.5 text-right whitespace-nowrap">
                   <div className="flex items-center justify-end gap-1.5">
                     {/* WhatsApp Reminder */}
                     {invoice.clientPhone && (

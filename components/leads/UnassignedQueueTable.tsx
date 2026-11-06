@@ -107,8 +107,8 @@ export function UnassignedQueueTable({
   }
 
   return (
-    <div className="rounded-2xl bg-white dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 shadow-sm overflow-hidden">
-      <table className="w-full text-left border-collapse text-xs">
+    <div className="rounded-2xl bg-white dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 shadow-sm overflow-hidden overflow-x-auto">
+      <table className="w-full min-w-[980px] text-left border-collapse text-xs">
         <thead>
           <tr className="border-b border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.02] text-gray-500 dark:text-gray-400 font-mono text-[11px] uppercase tracking-wider">
             <th className="w-10 px-4 py-3 text-center">
@@ -119,11 +119,11 @@ export function UnassignedQueueTable({
                 className="w-4 h-4 rounded border-gray-300 dark:border-gray-700 text-[#1B7167] focus:ring-[#1B7167] cursor-pointer"
               />
             </th>
-            <th className="px-4 py-3">Lead / Contact</th>
-            <th className="px-4 py-3">Interest / Package</th>
-            <th className="px-4 py-3">Est. Budget</th>
-            <th className="px-4 py-3">Source &amp; Inflow</th>
-            <th className="px-4 py-3 text-right">Quick Allocation</th>
+            <th className="w-[24%] min-w-[190px] px-4 py-3">Lead / Contact</th>
+            <th className="w-[20%] min-w-[160px] px-4 py-3">Interest / Package</th>
+            <th className="w-[16%] min-w-[130px] px-4 py-3">Est. Budget</th>
+            <th className="w-[16%] min-w-[130px] px-4 py-3">Source &amp; Inflow</th>
+            <th className="w-[24%] min-w-[220px] px-4 py-3 text-right">Quick Allocation</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100 dark:divide-white/5">
@@ -227,10 +227,10 @@ export function UnassignedQueueTable({
 
                 {/* 1-Click Allocation & Actions */}
                 <td
-                  className="px-4 py-3.5 text-right relative delegate-popover-container"
+                  className="px-4 py-3.5 text-right relative delegate-popover-container whitespace-nowrap"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="flex items-center justify-end gap-1.5">
+                  <div className="flex items-center justify-end gap-1.5 shrink-0 whitespace-nowrap">
                     {/* 1-Click Self-Assign Button */}
                     <button
                       type="button"
