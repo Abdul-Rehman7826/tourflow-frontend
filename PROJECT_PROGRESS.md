@@ -15,6 +15,21 @@ distinguishes between:
 - prototype behavior that is browser-local and still requires production backend work.
 
 ## Current Repository Snapshot
+### Delegate Popover Stacking Context & Overflow Clipping Fix (2026-11-06)
+
+- **Delegate Popover Portal Integration (`UnassignedQueueTable.tsx`)**:
+  - Diagnosed clipping issue where opening the "Delegate" popover menu on the last row (or single unassigned row) caused the dropdown menu to be cropped off by the table card's `overflow-hidden` / `overflow-x-auto` container boundary.
+  - Re-engineered the Delegate popover in `components/leads/UnassignedQueueTable.tsx` using `createPortal` targeting `document.body`:
+    - Renders the menu at `position: fixed` with `z-[9999]`, breaking completely free from parent card clipping and stacking context boundaries.
+    - Dynamically computes menu coordinates from the trigger button via `getBoundingClientRect()`.
+    - Automatically checks viewport space (`spaceBelow < 280`) and flips the popover upwards if the row is near the bottom of the viewport.
+    - Added global listeners for outside click, window resize, and background scroll to close the popover cleanly.
+- **Verification & Quality Assurance**:
+  - All 30 unit tests pass across `tests/lead-intake.test.cjs`, `tests/leads.test.cjs`, `tests/staff-intake.test.cjs`, and `tests/settings.test.cjs`.
+  - TypeScript compiler (`tsc --noEmit`) passes with 0 errors.
+  - `git diff --check` passes with 0 whitespace issues.
+  - Production Next.js build (`npm run build -- --webpack`) succeeds across all 31 application routes.
+
 ### Small Screen Table Responsiveness & Action Overlap Fix (2026-11-06)
 
 - **Small Screen Responsiveness in Lead Queue Tables**:

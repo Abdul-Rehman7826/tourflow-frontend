@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { Lead } from "@/types/erp";
 import { useAgencySettings } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
@@ -60,22 +61,57 @@ export function UnassignedQueueTable({
 
   const [assigningId, setAssigningId] = useState<string | null>(null);
   const [openMenuLeadId, setOpenMenuLeadId] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top?: number; bottom?: number; right: number } | null>(null);
+  const [mounted, setMounted] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const isAdmin = ["AGENCY_ADMIN", "SUPER_ADMIN"].includes(user?.role || "");
 
-  // Close dropdown menu on outside click
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Active lead whose delegation menu is currently open
+  const activeMenuLead = useMemo(() => {
+    if (!openMenuLeadId) return null;
+    return leads.find((l) => l.id === openMenuLeadId) || null;
+  }, [openMenuLeadId, leads]);
+
+  // Close dropdown menu on outside click, scroll, or resize
+  useEffect(() => {
+    if (!openMenuLeadId) return;
+
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
-      if (target && !target.closest(".delegate-popover-container")) {
-        setOpenMenuLeadId(null);
+      if (
+        target &&
+        (target.closest(".delegate-popover-menu") || target.closest(".delegate-popover-button"))
+      ) {
+        return;
       }
+      setOpenMenuLeadId(null);
+      setMenuPosition(null);
     };
+
+    const handleScrollOrResize = (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest && target.closest(".delegate-popover-menu")) {
+        return; // Allow scrolling inside the menu itself
+      }
+      setOpenMenuLeadId(null);
+      setMenuPosition(null);
+    };
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
+  }, [openMenuLeadId]);
 
   // Compute available reps for delegation (excluding current session user)
   const delegateReps = useMemo(() => {
@@ -261,98 +297,36 @@ export function UnassignedQueueTable({
 
                     {/* Delegate Popover Dropdown Button (Agency Admin / Manager only) */}
                     {isAdmin && (
-                      <div className="relative delegate-popover-container">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setOpenMenuLeadId(isMenuOpen ? null : lead.id)
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (openMenuLeadId === lead.id) {
+                            setOpenMenuLeadId(null);
+                            setMenuPosition(null);
+                          } else {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const spaceBelow = window.innerHeight - rect.bottom;
+                            const openUpwards = spaceBelow < 280;
+                            setMenuPosition({
+                              top: openUpwards ? undefined : rect.bottom + 6,
+                              bottom: openUpwards ? window.innerHeight - rect.top + 6 : undefined,
+                              right: Math.max(12, window.innerWidth - rect.right),
+                            });
+                            setOpenMenuLeadId(lead.id);
                           }
-                          className="px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 hover:border-[#1B7167] bg-white dark:bg-[#030712] text-gray-700 dark:text-gray-200 text-xs font-medium flex items-center gap-1 shadow-sm hover:shadow transition-all cursor-pointer"
-                          title="Delegate this lead to another representative"
-                        >
-                          <UserPlus className="w-3.5 h-3.5 text-[#1B7167]" />
-                          <span>Delegate</span>
-                          <ChevronDown className="w-3 h-3 text-gray-400" />
-                        </button>
-
-                        {/* Modern Popover Menu */}
-                        {isMenuOpen && (
-                          <div className="absolute right-0 mt-1.5 w-60 bg-white dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl z-30 p-2 text-left animate-in fade-in zoom-in-95 duration-100">
-                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-2 py-1">
-                              Assign Lead Inquiry
-                            </div>
-
-                            {/* Quick Assign to Session User */}
-                            {user?.name && (
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  setOpenMenuLeadId(null);
-                                  setAssigningId(lead.id);
-                                  try {
-                                    await onAssignToMe(lead.id);
-                                  } finally {
-                                    setAssigningId(null);
-                                  }
-                                }}
-                                className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-semibold text-gray-800 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-950/30 hover:text-[#1B7167] dark:hover:text-teal-400 transition-colors text-left cursor-pointer"
-                              >
-                                <div className="w-6 h-6 rounded-full bg-[#1B7167] text-white flex items-center justify-center text-[10px] font-bold">
-                                  {user.name.slice(0, 1).toUpperCase()}
-                                </div>
-                                <div className="flex-1 truncate">
-                                  <div className="truncate">{user.name}</div>
-                                  <div className="text-[10px] text-gray-400 font-normal">
-                                    You (Current User)
-                                  </div>
-                                </div>
-                              </button>
-                            )}
-
-                            <div className="border-t border-gray-100 dark:border-white/10 my-1" />
-                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-2 py-1">
-                              Active Representatives
-                            </div>
-
-                            <div className="max-h-48 overflow-y-auto space-y-0.5">
-                              {delegateReps.length === 0 ? (
-                                <div className="p-3 text-center text-xs text-gray-400">
-                                  No other active staff available
-                                </div>
-                              ) : (
-                                delegateReps.map((rep) => (
-                                  <button
-                                    key={rep.id || rep.name}
-                                    type="button"
-                                    onClick={async () => {
-                                      setOpenMenuLeadId(null);
-                                      setAssigningId(lead.id);
-                                      try {
-                                        await onAssignRep(lead.id, rep.name);
-                                      } finally {
-                                        setAssigningId(null);
-                                      }
-                                    }}
-                                    className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white transition-colors text-left cursor-pointer"
-                                  >
-                                    <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 flex items-center justify-center text-[10px] font-bold">
-                                      {rep.name.slice(0, 1).toUpperCase()}
-                                    </div>
-                                    <div className="flex-1 truncate">
-                                      <div className="truncate font-semibold">
-                                        {rep.name}
-                                      </div>
-                                      <div className="text-[10px] text-gray-400 truncate">
-                                        {rep.role || "Front Desk"}
-                                      </div>
-                                    </div>
-                                  </button>
-                                ))
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                        }}
+                        className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1 shadow-sm hover:shadow transition-all cursor-pointer delegate-popover-button shrink-0 ${
+                          isMenuOpen
+                            ? "border-[#1B7167] bg-teal-50 dark:bg-teal-950/40 text-[#1B7167] dark:text-teal-300 ring-1 ring-[#1B7167]"
+                            : "border-gray-200 dark:border-white/10 hover:border-[#1B7167] bg-white dark:bg-[#030712] text-gray-700 dark:text-gray-200"
+                        }`}
+                        title="Delegate this lead to another representative"
+                      >
+                        <UserPlus className="w-3.5 h-3.5 text-[#1B7167]" />
+                        <span>Delegate</span>
+                        <ChevronDown className="w-3 h-3 text-gray-400" />
+                      </button>
                     )}
 
                     {/* Agency Admin Edit Button */}
@@ -453,6 +427,98 @@ export function UnassignedQueueTable({
             </div>
           </div>
         </div>
+      )}
+      {/* Floating Delegate Popover via Portal: breaks completely out of table overflow & z-index stacking */}
+      {mounted && activeMenuLead && menuPosition && createPortal(
+        <div
+          style={{
+            position: "fixed",
+            top: menuPosition.top !== undefined ? `${menuPosition.top}px` : undefined,
+            bottom: menuPosition.bottom !== undefined ? `${menuPosition.bottom}px` : undefined,
+            right: `${menuPosition.right}px`,
+            zIndex: 9999,
+          }}
+          className="w-64 bg-white dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl p-2 text-left animate-in fade-in zoom-in-95 duration-100 delegate-popover-menu"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-2 py-1 truncate">
+            Assign Lead: <strong className="text-gray-700 dark:text-gray-300">{activeMenuLead.fullName}</strong>
+          </div>
+
+          {/* Quick Assign to Session User */}
+          {user?.name && (
+            <button
+              type="button"
+              onClick={async () => {
+                const targetId = activeMenuLead.id;
+                setOpenMenuLeadId(null);
+                setMenuPosition(null);
+                setAssigningId(targetId);
+                try {
+                  await onAssignToMe(targetId);
+                } finally {
+                  setAssigningId(null);
+                }
+              }}
+              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-semibold text-gray-800 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-950/30 hover:text-[#1B7167] dark:hover:text-teal-400 transition-colors text-left cursor-pointer"
+            >
+              <div className="w-6 h-6 rounded-full bg-[#1B7167] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                {user.name.slice(0, 1).toUpperCase()}
+              </div>
+              <div className="flex-1 truncate">
+                <div className="truncate">{user.name}</div>
+                <div className="text-[10px] text-gray-400 font-normal">
+                  You (Current User)
+                </div>
+              </div>
+            </button>
+          )}
+
+          <div className="border-t border-gray-100 dark:border-white/10 my-1" />
+          <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-2 py-1">
+            Active Representatives
+          </div>
+
+          <div className="max-h-48 overflow-y-auto space-y-0.5">
+            {delegateReps.length === 0 ? (
+              <div className="p-3 text-center text-xs text-gray-400">
+                No other active staff available
+              </div>
+            ) : (
+              delegateReps.map((rep) => (
+                <button
+                  key={rep.id || rep.name}
+                  type="button"
+                  onClick={async () => {
+                    const targetId = activeMenuLead.id;
+                    setOpenMenuLeadId(null);
+                    setMenuPosition(null);
+                    setAssigningId(targetId);
+                    try {
+                      await onAssignRep(targetId, rep.name);
+                    } finally {
+                      setAssigningId(null);
+                    }
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white transition-colors text-left cursor-pointer"
+                >
+                  <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+                    {rep.name.slice(0, 1).toUpperCase()}
+                  </div>
+                  <div className="flex-1 truncate">
+                    <div className="truncate font-semibold">
+                      {rep.name}
+                    </div>
+                    <div className="text-[10px] text-gray-400 truncate">
+                      {rep.role || "Front Desk"}
+                    </div>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );
