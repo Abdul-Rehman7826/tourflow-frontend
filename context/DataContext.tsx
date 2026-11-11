@@ -8,7 +8,15 @@ import React, {
   ReactNode,
   useMemo,
   useRef,
+  useCallback,
 } from "react";
+import {
+  DEMO_SUPPLIERS,
+  DEMO_OFFICE_EXPENSES,
+  DEMO_VAULT_DOCUMENTS,
+  DEMO_EMPLOYEES,
+  DEMO_SHIFTS,
+} from "@/lib/demo-data";
 import { useAuth } from "@/context/AuthContext";
 import { allocateTourRoom, changeTourOperations, unfilledPassengerSlots, type TourOperation } from "@/lib/tour-operations";
 import { normalizeVisaCase, saveVisaCase, bridgeGroupTourVisaCases, archiveVisaCase, type VisaCasePatch, type VisaCaseInput } from '@/lib/visa-operations';
@@ -434,9 +442,9 @@ const initialERP = (fresh = false): ERPState => ({
   visaCases: INITIAL_VISA_CASES.filter(v => v.tenantId !== OPERATIONAL_TENANT_ID),
   invoices: [...mockInvoices, ...INITIAL_INVOICES.filter(i => i.tenantId !== OPERATIONAL_TENANT_ID)],
   expenses: [...INITIAL_EXPENSES],
-  officeExpenses: [],
-  vaultDocuments: [],
-  suppliers: [],
+  officeExpenses: DEMO_OFFICE_EXPENSES.map((o) => ({ ...o, tenantId: OPERATIONAL_TENANT_ID })),
+  vaultDocuments: DEMO_VAULT_DOCUMENTS.map((v) => ({ ...v, tenantId: OPERATIONAL_TENANT_ID })),
+  suppliers: DEMO_SUPPLIERS.map((s) => ({ ...s, tenantId: OPERATIONAL_TENANT_ID })),
 });
 
 function normalizeTourExpense(expense: TourExpense): TourExpense {
@@ -529,11 +537,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const savedEmployees = localStorage.getItem(employeeKey);
         const savedShifts = localStorage.getItem(shiftKey);
         const loadedEmployees = savedEmployees ? JSON.parse(savedEmployees) : [];
-        setEmployees(Array.isArray(loadedEmployees) ? loadedEmployees.map(normalizeEmployee) : []);
-        setShifts(savedShifts ? JSON.parse(savedShifts) : []);
+        const finalEmployees = Array.isArray(loadedEmployees) && loadedEmployees.length > 0
+          ? loadedEmployees
+          : DEMO_EMPLOYEES.map((e) => ({ ...e, tenantId: tenant.id }));
+        const finalShifts = savedShifts && JSON.parse(savedShifts)?.length > 0
+          ? JSON.parse(savedShifts)
+          : DEMO_SHIFTS;
+        setEmployees(finalEmployees.map(normalizeEmployee));
+        setShifts(finalShifts);
       } catch {
-        setEmployees([]);
-        setShifts([]);
+        setEmployees(DEMO_EMPLOYEES.map((e) => ({ ...e, tenantId: tenant.id })).map(normalizeEmployee));
+        setShifts(DEMO_SHIFTS);
       }
       setHrTenantId(tenant.id);
     });
@@ -2027,15 +2041,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // DYNAMIC MULTI-TENANT FILTERING
   // ==========================================================================
   // Whenever the active tenant changes in TenantContext, these memoized lists
-  // strictly filter records belonging to tenant.id!
+  // filter records belonging to the active tenant with alias resilience!
+  const isMatchingTenant = useCallback((itemTenantId?: string | null) => {
+    if (!itemTenantId) return false;
+    if (itemTenantId === tenant.id) return true;
+    const wchAliases = new Set(["worldclass", "tenant-world-class", "tenant-wch"]);
+    return wchAliases.has(itemTenantId) && wchAliases.has(tenant.id);
+  }, [tenant.id]);
+
   const currentLeads = useMemo(
-    () => allLeads.filter((item) => item.tenantId === tenant.id),
-    [allLeads, tenant.id],
+    () => allLeads.filter((item) => isMatchingTenant(item.tenantId)),
+    [allLeads, isMatchingTenant],
   );
 
   const currentTours = useMemo(
-    () => allTours.filter((item) => item.tenantId === tenant.id),
-    [allTours, tenant.id],
+    () => allTours.filter((item) => isMatchingTenant(item.tenantId)),
+    [allTours, isMatchingTenant],
   );
 
   const currentTourIds = useMemo(
@@ -2049,33 +2070,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
   );
 
   const currentVisaCases = useMemo(
-    () => allVisaCases.filter((item) => item.tenantId === tenant.id && !item.cancelledAt),
-    [allVisaCases, tenant.id],
+    () => allVisaCases.filter((item) => isMatchingTenant(item.tenantId) && !item.cancelledAt),
+    [allVisaCases, isMatchingTenant],
   );
 
   const currentInvoices = useMemo(
-    () => allInvoices.filter((item) => item.tenantId === tenant.id),
-    [allInvoices, tenant.id],
+    () => allInvoices.filter((item) => isMatchingTenant(item.tenantId)),
+    [allInvoices, isMatchingTenant],
   );
 
   const currentExpenses = useMemo(
-    () => allExpenses.filter((item) => item.tenantId === tenant.id),
-    [allExpenses, tenant.id],
+    () => allExpenses.filter((item) => isMatchingTenant(item.tenantId)),
+    [allExpenses, isMatchingTenant],
   );
 
   const currentOfficeExpenses = useMemo(
-    () => (crm.officeExpenses || []).filter((item) => item.tenantId === tenant.id),
-    [crm.officeExpenses, tenant.id],
+    () => (crm.officeExpenses || []).filter((item) => isMatchingTenant(item.tenantId)),
+    [crm.officeExpenses, isMatchingTenant],
   );
 
   const currentVaultDocuments = useMemo(
-    () => (crm.vaultDocuments || []).filter((item) => item.tenantId === tenant.id),
-    [crm.vaultDocuments, tenant.id],
+    () => (crm.vaultDocuments || []).filter((item) => isMatchingTenant(item.tenantId)),
+    [crm.vaultDocuments, isMatchingTenant],
   );
 
   const currentSuppliers = useMemo(
-    () => (crm.suppliers || []).filter((item) => item.tenantId === tenant.id),
-    [crm.suppliers, tenant.id],
+    () => (crm.suppliers || []).filter((item) => isMatchingTenant(item.tenantId)),
+    [crm.suppliers, isMatchingTenant],
   );
 
   const currentLedgerEntries = useMemo(
@@ -3141,8 +3162,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         requestPersonalSalaryAdvance,
         reviewSalaryAdvance,
         employees:
-          user?.tenantId === tenant.id || user?.role === "SUPER_ADMIN"
-            ? employees.filter((entry) => entry.tenantId === tenant.id)
+          isMatchingTenant(user?.tenantId) || user?.role === "SUPER_ADMIN"
+            ? employees.filter((entry) => isMatchingTenant(entry.tenantId))
             : [],
         shifts,
         createShiftRecord,
@@ -3150,7 +3171,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         createEmployeeRecord,
         updateEmployeeRecord,
         bookings:
-          user?.tenantId === tenant.id &&
+          user &&
+          isMatchingTenant(user.tenantId) &&
           [
             "AGENCY_ADMIN",
             "FRONT_DESK",
@@ -3159,7 +3181,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           ].includes(user.role)
             ? crm.bookings.filter(
                 (b) =>
-                  b.tenantId === tenant.id &&
+                  isMatchingTenant(b.tenantId) &&
                   (user.role !== "TOUR_MANAGER" ||
                     b.serviceType === "GROUP_TOUR") &&
                   (user.role !== "VISA_CONSULTANT" ||
@@ -3179,10 +3201,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         reassignRoomAllocation,
         assignTravelerToBooking,
         deleteTravelerFromManifest,
-        clients: crm.clients.filter((c) => c.tenantId === user?.tenantId),
+        clients: crm.clients.filter((c) => isMatchingTenant(c.tenantId)),
         duplicates:
           user?.role === "AGENCY_ADMIN"
-            ? crm.duplicates.filter((d) => d.tenantId === user.tenantId)
+            ? crm.duplicates.filter((d) => isMatchingTenant(d.tenantId))
             : [],
         activeReps,
         crmReady,
@@ -3196,33 +3218,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
         resolveDuplicate,
         leads: isHydrated
           ? currentLeads
-          : INITIAL_LEADS.filter((l) => l.tenantId === tenant.id),
+          : INITIAL_LEADS.filter((l) => isMatchingTenant(l.tenantId)),
         tours: isHydrated
           ? currentTours
-          : INITIAL_TOURS.filter((t) => t.tenantId === tenant.id),
+          : INITIAL_TOURS.filter((t) => isMatchingTenant(t.tenantId)),
         passengers: currentPassengers,
         visaCases: isHydrated
           ? currentVisaCases
-          : INITIAL_VISA_CASES.filter((v) => v.tenantId === tenant.id),
+          : INITIAL_VISA_CASES.filter((v) => isMatchingTenant(v.tenantId)),
         invoices: isHydrated
           ? currentInvoices
-          : INITIAL_INVOICES.filter((i) => i.tenantId === tenant.id),
+          : INITIAL_INVOICES.filter((i) => isMatchingTenant(i.tenantId)),
         expenses:
-          user?.tenantId === tenant.id && canViewTourCosts(user.role)
+          user && isMatchingTenant(user.tenantId) && canViewTourCosts(user.role)
             ? isHydrated
               ? currentExpenses
-              : INITIAL_EXPENSES.filter((e) => e.tenantId === tenant.id)
+              : INITIAL_EXPENSES.filter((e) => isMatchingTenant(e.tenantId))
             : [],
         officeExpenses:
-          isHydrated && user?.tenantId === tenant.id && canManageOfficeExpenses(user.role)
+          isHydrated && user && isMatchingTenant(user.tenantId) && canManageOfficeExpenses(user.role)
             ? currentOfficeExpenses
             : [],
         vaultDocuments:
-          isHydrated && user?.tenantId === tenant.id && ["AGENCY_ADMIN", "VISA_CONSULTANT"].includes(user.role)
+          isHydrated && user && isMatchingTenant(user.tenantId) && ["AGENCY_ADMIN", "VISA_CONSULTANT"].includes(user.role)
             ? currentVaultDocuments
             : [],
         suppliers:
-          isHydrated && user?.tenantId === tenant.id && ["AGENCY_ADMIN", "TOUR_MANAGER"].includes(user.role)
+          isHydrated && user && isMatchingTenant(user.tenantId) && ["AGENCY_ADMIN", "TOUR_MANAGER"].includes(user.role)
             ? currentSuppliers
             : [],
         uploadVaultDocument,
@@ -3233,7 +3255,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         updateSupplier,
         deleteSupplier,
         ledgerEntries:
-          isHydrated && user?.tenantId === tenant.id && user.role === "AGENCY_ADMIN"
+          isHydrated && user && isMatchingTenant(user.tenantId) && user.role === "AGENCY_ADMIN"
             ? currentLedgerEntries
             : [],
         addTourExpense,

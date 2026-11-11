@@ -15,6 +15,52 @@ distinguishes between:
 - prototype behavior that is browser-local and still requires production backend work.
 
 ## Current Repository Snapshot
+### Demo Login Feature & Comprehensive Multi-Role Demo Dataset (2026-11-12)
+
+- **Comprehensive Multi-Role Demo Authentication Engine (`lib/demo-auth.ts`)**:
+  - Engineered 1-click exploratory demo access across all 6 core TourFlow ERP operational roles:
+    1. **Managing Director / Agency Owner (`AGENCY_ADMIN`)**: Nadeem Akhtar (`admin@worldclassholidays.org`) - Full executive financial dashboard, supplier exposure ledger, payroll signoff, agency settings.
+    2. **Front Desk & Intake Specialist (`FRONT_DESK`)**: Fatima Noor (`fatima@worldclassholidays.org`) - CRM omnichannel lead queues, instant quotation generator, walk-in registration, WhatsApp quotation dispatch.
+    3. **Tour Operations Lead (`TOUR_MANAGER`)**: Shahbaz Ahmed (`tours@worldclassholidays.org`) - Group departures, traveler manifest, room allocations, tour direct cost entry.
+    4. **Senior Visa Consultant (`VISA_CONSULTANT`)**: Zainab Tariq (`visa@worldclassholidays.org`) - Embassy submission pipeline, document tracker, safe custody vault locker.
+    5. **HR & Payroll Manager (`HR_MANAGER`)**: Bilal Siddiqui (`hr@worldclassholidays.org`) - Staff roster, shift attendance kiosk, leave approvals, monthly salary run review.
+    6. **Platform Super Admin (`SUPER_ADMIN`)**: Kamran Shah (`superadmin@worldclassholidays.org`) - Multi-tenant provisioning, license renewal, system telemetries.
+  - Generates client-side base64url 3-part compliant JWT tokens with valid claims (`sub`, `tenant_id`, `role`, `token_kind`, `email`, `name`, `exp`, `iat`) compatible with Next.js edge proxy `jose.decodeJwt()`.
+  - Sets dual authentication cookies (`tourflow_token`, `tourflow_terminal_token`) and persistent `localStorage` session keys.
+  - Guarded `AuthContext.validateSession()` to prevent live backend 401 unauthenticated pings from invalidating local demo sessions.
+
+- **Interactive Demo Login Matrix Component (`components/auth/DemoLoginCard.tsx`) & Two-Column Layout (`app/login/page.tsx`)**:
+  - Embedded a glassmorphism Demo Access card onto the `/login` view with role selection pills, color-coded badges, department indicators, permission lists, and email copy helpers.
+  - Provided **"Fill Form"** to auto-populate email and password into the standard login form for standard authentication flow testing.
+  - Provided **"1-Click Sign In"** for immediate bypass to each role's dedicated home route (`/dashboard`, `/leads`, `/tours`, `/visa-pipeline`, `/hr-dashboard`).
+  - Added a **"Reset Data"** button to refresh all in-memory ERP datasets to initial state at any time.
+
+- **Universal Quick PIN (1234) & Workstation Unlock (`components/auth/ProfilePinModal.tsx` & `app/profiles/page.tsx`)**:
+  - Implemented universal demo PIN `1234` for instant profile unlocking.
+  - Added a dedicated `[1-Click Demo Unlock (PIN: 1234)]` button inside the PIN dialog.
+  - Fallback mechanism in `/profiles`: if backend API is unreachable or returns empty, automatically renders demo staff profile cards with `Demo: 1234` badges so testing is never blocked.
+
+- **Comprehensive Multi-Module Demo Dataset (`lib/demo-data.ts`)**:
+  - Seeded realistic travel agency datasets for tenant `tenant-world-class` (`World Class Holidays`):
+    - **Shifts**: Morning Shift (08:00 - 16:30), General Operations Shift (09:00 - 18:00 with 15m grace), Evening Shift (13:30 - 22:00).
+    - **Staff**: 6 complete employee profiles with salaries, departments, phone numbers, and designated shift IDs.
+    - **Attendance**: Real-time attendance entries for today across `KIOSK_PIN`, `QR_SCAN`, and `MANUAL_HR` sources.
+    - **Leaves**: Approved and pending medical, annual, and casual leave requests.
+    - **Salary Advances**: Disbursed and pending emergency advances.
+    - **Payroll Runs**: October 2026 finalized payroll run with itemized calculations (gross, advance deductions, late penalties, net payable).
+    - **Suppliers**: 6 premier partners (Emirates Group, Saudia Group, Rotana Hotels, Baku DMC, Star Visa Services, FlyJinnah).
+    - **Office Expenses**: 6 categorized expenses (office rent, cloud infra, fiber internet, marketing, utilities, refreshments).
+    - **Safe Custody Vault**: 6 physical travel documents (passports, original property deeds, bank guarantees) with safe locker numbers and chain-of-custody tracking.
+  - Added tenant alias resilience in `context/DataContext.tsx` mapping `worldclass`, `tenant-world-class`, and `tenant-wch` seamlessly.
+
+- **Verification & Quality Assurance**:
+  - All 18 core ERP acceptance tests pass (`tests/acceptance-matrix.test.cjs`).
+  - Added dedicated demo engine test suite passing all 4 cases (`tests/demo-engine.test.cjs`).
+  - TypeScript compiler (`tsc --noEmit`) passes with 0 errors.
+  - ESLint passes with 0 errors.
+  - `git diff --check` passes cleanly with 0 whitespace issues.
+  - Full production Next.js build (`npm run build -- --webpack`) succeeds across all 31 application routes.
+
 ### Delegate Popover Stacking Context & Overflow Clipping Fix (2026-11-06)
 
 - **Delegate Popover Portal Integration (`UnassignedQueueTable.tsx`)**:

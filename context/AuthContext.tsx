@@ -11,6 +11,7 @@ import {
   TERMINAL_TOKEN_STORAGE_KEY,
   storeAuthenticatedTenant,
 } from '@/lib/profile-session';
+import { DemoAccount, executeDemoLogin, isDemoSession } from '@/lib/demo-auth';
 
 export interface UserProfile {
   id: string;
@@ -75,6 +76,7 @@ interface AuthContextType {
   isLoading: boolean;
   isHydrated: boolean;
   login: (email: string, password?: string) => Promise<LoginResult>;
+  loginWithDemo: (account: DemoAccount) => { success: boolean; targetRoute: string; user: Record<string, unknown> };
   requestPasswordReset: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   completeForcedReset: (input: {
     email: string;
@@ -129,6 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('tourflow_session');
     localStorage.removeItem('access_token');
     localStorage.removeItem('token');
+    localStorage.removeItem('tourflow_is_demo_mode');
     document.cookie = 'tourflow_session=; path=/; max-age=0; SameSite=Lax';
     document.cookie = 'tourflow_token=; path=/; max-age=0; SameSite=Lax';
     setToken(null);
@@ -172,6 +175,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch {
           localStorage.removeItem('tourflow_auth_user');
         }
+      }
+
+      // If active session is in demo mode, retain session without pinging backend
+      if (isDemoSession()) {
+        if (active) setIsLoading(false);
+        return;
       }
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -321,6 +330,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const loginWithDemo = useCallback((account: DemoAccount) => {
+    setIsLoading(true);
+    const result = executeDemoLogin(account);
+    if (result.success) {
+      const storedToken = localStorage.getItem('tourflow_token');
+      const cached = localStorage.getItem('tourflow_auth_user');
+      if (cached && storedToken) {
+        setToken(storedToken);
+        setUser(JSON.parse(cached) as UserProfile);
+        setIsAuthenticated(true);
+      }
+    }
+    setIsLoading(false);
+    return result;
+  }, []);
+
   const requestPasswordReset = useCallback(async (email: string): Promise<{ success: boolean; message?: string; error?: string }> => {
     setIsLoading(true);
     try {
@@ -423,6 +448,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isLoading,
       isHydrated,
       login,
+      loginWithDemo,
       requestPasswordReset,
       completeForcedReset,
       logout,
@@ -440,6 +466,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isLoading,
       isHydrated,
       login,
+      loginWithDemo,
       requestPasswordReset,
       completeForcedReset,
       logout,

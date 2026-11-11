@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { DemoLoginCard } from "@/components/auth/DemoLoginCard";
 import {
   Compass,
   Lock,
@@ -17,6 +18,7 @@ import {
   ShieldCheck,
   KeyRound,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 
 export default function LoginPage() {
@@ -45,6 +47,12 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleFillCredentials = (fillEmail: string, fillPass: string) => {
+    setEmail(fillEmail);
+    setPassword(fillPass);
+    setErrorMessage(null);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,10 +127,14 @@ function LoginForm() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 bg-slate-100/80 dark:bg-white/5 px-3 py-1.5 rounded-full border border-slate-200/60 dark:border-white/10">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="font-medium text-[11px]">System Active &bull; SSL Secured</span>
+          </div>
+          <div className="hidden md:flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-50/90 dark:bg-emerald-950/40 px-3 py-1.5 rounded-full border border-emerald-500/20 font-medium">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-[11px] font-semibold">Demo Mode Ready</span>
           </div>
           <ThemeToggle />
         </div>
@@ -130,9 +142,11 @@ function LoginForm() {
 
       {/* Main Login Card Viewport */}
       <main className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 z-10 flex flex-col items-center">
-        <div className="w-full max-w-md space-y-5 my-auto py-4">
-          {/* Main Card */}
-          <div className="bg-white/90 dark:bg-[#081512]/90 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-emerald-950/5 dark:shadow-black/50 space-y-6">
+        <div className="w-full max-w-5xl my-auto py-4 flex flex-col lg:flex-row items-stretch justify-center gap-6">
+          {/* Left Column: Staff Sign-in Form */}
+          <div className="w-full lg:max-w-md space-y-5 flex flex-col justify-center">
+            {/* Main Card */}
+            <div className="bg-white/90 dark:bg-[#081512]/90 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-emerald-950/5 dark:shadow-black/50 space-y-6">
             
             {/* Card Header with Icon */}
             <div className="text-center space-y-2">
@@ -330,6 +344,12 @@ function LoginForm() {
               </div>
             </div>
 
+          </div>
+          </div>
+
+          {/* Right Column: Instant 1-Click Demo Access Matrix */}
+          <div className="w-full lg:max-w-xl flex flex-col justify-center">
+            <DemoLoginCard onFillCredentials={handleFillCredentials} />
           </div>
         </div>
       </main>

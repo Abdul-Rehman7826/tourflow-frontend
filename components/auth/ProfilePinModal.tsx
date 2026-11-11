@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { KeyRound, LockKeyhole, LogIn, UserRound, X } from "lucide-react";
+import { KeyRound, LockKeyhole, LogIn, Sparkles, UserRound, X } from "lucide-react";
 import {
   PIN_PATTERN,
   TERMINAL_TOKEN_STORAGE_KEY,
@@ -9,6 +9,7 @@ import {
   storeProfileSession,
 } from "@/lib/profile-session";
 import { useAgencySettings } from "@/context/ThemeContext";
+import { DEMO_ACCOUNTS, executeDemoLogin, isDemoSession } from "@/lib/demo-auth";
 
 export interface AgencyProfile {
   id: string;
@@ -50,6 +51,28 @@ export function ProfilePinModal({ profile, onClose }: { profile: AgencyProfile; 
     submittedPin.current = pin;
     setBusy(true);
     setError("");
+
+    // Check if this is a demo unlock attempt (standard demo PIN is 1234)
+    const matchingDemo = DEMO_ACCOUNTS.find(
+      (a) =>
+        a.id === profile.id ||
+        a.email.toLowerCase() === profile.email.toLowerCase() ||
+        a.role === profile.role
+    );
+    const isDemoMode = isDemoSession() || pin === "1234" || matchingDemo?.quickPin === pin;
+
+    if (isDemoMode && matchingDemo && (pin === "1234" || matchingDemo.quickPin === pin)) {
+      try {
+        const demoRes = executeDemoLogin(matchingDemo);
+        if (demoRes.success && demoRes.targetRoute) {
+          window.location.replace(demoRes.targetRoute);
+          return;
+        }
+      } catch (e) {
+        console.warn("Demo unlock fallback error:", e);
+      }
+    }
+
     try {
       const terminalToken = localStorage.getItem(TERMINAL_TOKEN_STORAGE_KEY);
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -79,6 +102,15 @@ export function ProfilePinModal({ profile, onClose }: { profile: AgencyProfile; 
       storeProfileSession(result.access_token, mappedUser, result.expires_in);
       window.location.replace(profileHomeRoute(result.user.role, result.user.screen_access as Record<string, unknown> | undefined));
     } catch (caught) {
+      // If API fails but PIN was 1234, unlock as demo
+      if (pin === "1234" && matchingDemo) {
+        const demoRes = executeDemoLogin(matchingDemo);
+        if (demoRes.success && demoRes.targetRoute) {
+          window.location.replace(demoRes.targetRoute);
+          return;
+        }
+      }
+
       setShaking(true);
       setShowPasswordSignIn(true);
       window.setTimeout(() => setShaking(false), 450);
@@ -125,6 +157,19 @@ export function ProfilePinModal({ profile, onClose }: { profile: AgencyProfile; 
               aria-label={`PIN digit ${index + 1}`}
             />
           ))}
+        </div>
+        <div className="mt-3.5 flex items-center justify-center">
+          <button
+            type="button"
+            onClick={() => {
+              setDigits(["1", "2", "3", "4"]);
+              void submit("1234");
+            }}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300 dark:hover:bg-emerald-500/30 transition cursor-pointer"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>1-Click Demo Unlock (PIN: 1234)</span>
+          </button>
         </div>
         {error && <p role="alert" className="mt-3 text-center text-xs font-medium text-rose-400">{error}</p>}
         <button type="submit" disabled={busy || !PIN_PATTERN.test(digits.join(""))} className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl font-bold text-white shadow-lg transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-40" style={{ backgroundColor: accentColor }}><KeyRound className="h-4 w-4" />{busy ? "Checking PIN..." : "OK"}</button>
